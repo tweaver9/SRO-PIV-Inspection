@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valve Inspection App</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    .container {
+      margin-top: 60px;
+    }
+    input[type="number"] {
+      font-size: 2em;
+      padding: 10px;
+      width: 80%;
+      margin-bottom: 20px;
+    }
+    button {
+      font-size: 1.5em;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+    .top-bar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 10px;
+      background-color: #222;
+      text-align: right;
+    }
+    .question, .summary {
+      margin: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    .answer-buttons button {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <button onclick="showSummary()">DONE</button>
+  </div>
+  <div class="container" id="main-screen">
+    <input type="number" id="item-number" placeholder="Enter item number" />
+    <br/>
+    <button onclick="startQuestions()">ENTER</button>
+  </div>
+
+  <div class="container hidden" id="questionnaire">
+    <div class="question" id="question-text"></div>
+    <div class="answer-buttons" id="answer-buttons"></div>
+  </div>
+
+  <div class="container hidden" id="summary">
+    <h2>Summary</h2>
+    <div id="summary-table"></div>
+    <button onclick="downloadPDF()">Download PDF</button>
+  </div>
+
+  <script>
+    const questions = [
+      { q: "Position of Valve", options: ["Open", "Closed"] },
+      { q: "Sight glass condition", options: ["Good", "Needs Repair"] },
+      { q: "Placard properly aligned", options: ["Yes", "No"] },
+      { q: "Is there damage or corrosion to the valve/body", options: ["Yes", "No"] },
+      { q: "Is identification easily visible", options: ["Yes", "No"] },
+      { q: "Is it chained with functioning lock", options: ["Yes", "No"] },
+      { q: "Are there any leaks from the valve or body", options: ["Yes", "No"] },
+      { q: "Is there a wrench available", options: ["Yes", "No"] }
+    ];
+
+    const codeMap = {
+      "Yes": "Y",
+      "No": "N",
+      "Open": "O",
+      "Closed": "C",
+      "Good": "Y",
+      "Needs Repair": "N"
+    };
+
+    let currentItem = "";
+    let currentQuestion = 0;
+    let data = {};
+    let tempAnswers = [];
+
+    function startQuestions() {
+      currentItem = document.getElementById("item-number").value;
+      if (!currentItem) return;
+      tempAnswers = [];
+      currentQuestion = 0;
+      document.getElementById("main-screen").classList.add("hidden");
+      document.getElementById("questionnaire").classList.remove("hidden");
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById("question-text").innerText = q.q;
+      const buttonContainer = document.getElementById("answer-buttons");
+      buttonContainer.innerHTML = "";
+      q.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.textContent = option;
+        btn.onclick = () => {
+          tempAnswers.push(codeMap[option]);
+          currentQuestion++;
+          if (currentQuestion < questions.length) {
+            showQuestion();
+          } else {
+            saveAnswers();
+          }
+        };
+        buttonContainer.appendChild(btn);
+      });
+    }
+
+    function saveAnswers() {
+      data["PIV-" + currentItem.padStart(4, "0")] = tempAnswers;
+      document.getElementById("questionnaire").classList.add("hidden");
+      document.getElementById("main-screen").classList.remove("hidden");
+      document.getElementById("item-number").value = "";
+    }
+
+    function showSummary() {
+      const summary = document.getElementById("summary");
+      const tableDiv = document.getElementById("summary-table");
+      let html = "<table border='1' style='width:100%; background:white; color:black; text-align:center;'><tr><th>Item</th>";
+      for (let i = 1; i <= 8; i++) html += "<th>Q" + i + "</th>";
+      html += "</tr>";
+      Object.keys(data).sort().forEach(key => {
+        html += "<tr><td>" + key + "</td>";
+        data[key].forEach(ans => html += "<td>" + ans + "</td>");
+        html += "</tr>";
+      });
+      html += "</table>";
+      tableDiv.innerHTML = html;
+      document.getElementById("main-screen").classList.add("hidden");
+      summary.classList.remove("hidden");
+    }
+
+    function downloadPDF() {
+      const summaryTable = document.getElementById("summary-table").innerHTML;
+      const win = window.open("", "_blank");
+      win.document.write("<html><head><title>Summary</title></head><body>" + summaryTable + "</body></html>");
+      win.document.close();
+      win.print();
+    }
+  </script>
+</body>
+</html>
