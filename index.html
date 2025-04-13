@@ -109,112 +109,130 @@
   </div>
 
   <script>
-    const questions = [
-      { q: "Position of Valve", options: ["Open", "Closed"] },
-      { q: "Sight glass condition", options: ["Good", "Needs Repair"] },
-      { q: "Placard properly aligned", options: ["Yes", "No"] },
-      { q: "Is there damage or corrosion to the valve/body", options: ["Yes", "No"] },
-      { q: "Is identification easily visible", options: ["Yes", "No"] },
-      { q: "Is it chained with functioning lock", options: ["Yes", "No"] },
-      { q: "Are there any leaks from the valve or body", options: ["Yes", "No"] },
-      { q: "Is there a wrench available", options: ["Yes", "No"] }
-    ];
+  const questions = [
+    { q: "Position of Valve", options: ["Open", "Closed"] },
+    { q: "Sight glass condition", options: ["Good", "Needs Repair"] },
+    { q: "Placard properly aligned", options: ["Yes", "No"] },
+    { q: "Is there damage or corrosion to the valve/body", options: ["Yes", "No"] },
+    { q: "Is identification easily visible", options: ["Yes", "No"] },
+    { q: "Is it chained with functioning lock", options: ["Yes", "No"] },
+    { q: "Are there any leaks from the valve or body", options: ["Yes", "No"] },
+    { q: "Is there a wrench available", options: ["Yes", "No"] }
+  ];
 
-    const codeMap = {
-      "Yes": "Y",
-      "No": "N",
-      "Open": "O",
-      "Closed": "C",
-      "Good": "Y",
-      "Needs Repair": "N"
+  const codeMap = {
+    "Yes": "Y",
+    "No": "N",
+    "Open": "O",
+    "Closed": "C",
+    "Good": "Y",
+    "Needs Repair": "N"
+  };
+
+  let currentItem = "";
+  let currentQuestion = 0;
+  let data = {};
+  let tempAnswers = [];
+
+  // Load existing data from localStorage
+  window.onload = () => {
+    const saved = localStorage.getItem("inspectionData");
+    if (saved) {
+      data = JSON.parse(saved);
+    }
+  };
+
+  function startQuestions() {
+    currentItem = document.getElementById("item-number").value;
+    if (!currentItem) return;
+    tempAnswers = [];
+    currentQuestion = 0;
+    document.getElementById("main-screen").classList.add("hidden");
+    document.getElementById("questionnaire").classList.remove("hidden");
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const q = questions[currentQuestion];
+    document.getElementById("question-text").innerText = q.q;
+    const buttonContainer = document.getElementById("answer-buttons");
+    buttonContainer.innerHTML = "";
+    q.options.forEach(option => {
+      const btn = document.createElement("button");
+      btn.textContent = option;
+      btn.onclick = () => {
+        tempAnswers.push(codeMap[option]);
+        currentQuestion++;
+        if (currentQuestion < questions.length) {
+          showQuestion();
+        } else {
+          saveAnswers();
+        }
+      };
+      buttonContainer.appendChild(btn);
+    });
+  }
+
+  function saveAnswers() {
+    const id = "PIV-" + currentItem.padStart(4, "0");
+    data[id] = tempAnswers;
+    localStorage.setItem("inspectionData", JSON.stringify(data));
+    document.getElementById("questionnaire").classList.add("hidden");
+    document.getElementById("main-screen").classList.remove("hidden");
+    document.getElementById("item-number").value = "";
+  }
+
+  function showSummary() {
+    const summary = document.getElementById("summary");
+    const tableDiv = document.getElementById("summary-table");
+
+    let html = "<table><thead><tr><th>Item</th>";
+    questions.forEach(q => {
+      html += `<th>${q.q}</th>`;
+    });
+    html += "</tr></thead><tbody>";
+
+    Object.keys(data).sort().forEach(key => {
+      html += `<tr><td>${key}</td>`;
+      data[key].forEach(ans => html += `<td>${ans}</td>`);
+      html += "</tr>";
+    });
+
+    html += "</tbody></table>";
+    tableDiv.innerHTML = html;
+
+    document.getElementById("main-screen").classList.add("hidden");
+    document.getElementById("questionnaire").classList.add("hidden");
+    summary.classList.remove("hidden");
+  }
+
+  function downloadPDF() {
+    const element = document.createElement('div');
+    element.innerHTML = document.getElementById("summary-table").innerHTML;
+    element.style.color = "black";
+    element.style.backgroundColor = "white";
+    element.style.padding = "20px";
+    element.style.fontSize = "12px";
+
+    const opt = {
+      margin:       0.5,
+      filename:     'Valve_Inspection_Summary.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+      pagebreak:    { mode: ['css', 'legacy'] }
     };
 
-    let currentItem = "";
-    let currentQuestion = 0;
-    let data = {};
-    let tempAnswers = [];
+    html2pdf().set(opt).from(element).save();
+  }
 
-    function startQuestions() {
-      currentItem = document.getElementById("item-number").value;
-      if (!currentItem) return;
-      tempAnswers = [];
-      currentQuestion = 0;
-      document.getElementById("main-screen").classList.add("hidden");
-      document.getElementById("questionnaire").classList.remove("hidden");
-      showQuestion();
+  function clearData() {
+    if (confirm("Are you sure you want to reset all saved data?")) {
+      localStorage.removeItem("inspectionData");
+      data = {};
+      location.reload();
     }
-
-    function showQuestion() {
-      const q = questions[currentQuestion];
-      document.getElementById("question-text").innerText = q.q;
-      const buttonContainer = document.getElementById("answer-buttons");
-      buttonContainer.innerHTML = "";
-      q.options.forEach(option => {
-        const btn = document.createElement("button");
-        btn.textContent = option;
-        btn.onclick = () => {
-          tempAnswers.push(codeMap[option]);
-          currentQuestion++;
-          if (currentQuestion < questions.length) {
-            showQuestion();
-          } else {
-            saveAnswers();
-          }
-        };
-        buttonContainer.appendChild(btn);
-      });
-    }
-
-    function saveAnswers() {
-      data["PIV-" + currentItem.padStart(4, "0")] = tempAnswers;
-      document.getElementById("questionnaire").classList.add("hidden");
-      document.getElementById("main-screen").classList.remove("hidden");
-      document.getElementById("item-number").value = "";
-    }
-
-    function showSummary() {
-      const summary = document.getElementById("summary");
-      const tableDiv = document.getElementById("summary-table");
-
-      let html = "<table><thead><tr><th>Item</th>";
-      questions.forEach(q => {
-        html += `<th>${q.q}</th>`;
-      });
-      html += "</tr></thead><tbody>";
-
-      Object.keys(data).sort().forEach(key => {
-        html += `<tr><td>${key}</td>`;
-        data[key].forEach(ans => html += `<td>${ans}</td>`);
-        html += "</tr>";
-      });
-
-      html += "</tbody></table>";
-      tableDiv.innerHTML = html;
-
-      document.getElementById("main-screen").classList.add("hidden");
-      document.getElementById("questionnaire").classList.add("hidden");
-      summary.classList.remove("hidden");
-    }
-
-    function downloadPDF() {
-      const element = document.createElement('div');
-      element.innerHTML = document.getElementById("summary-table").innerHTML;
-      element.style.color = "black";
-      element.style.backgroundColor = "white";
-      element.style.padding = "20px";
-      element.style.fontSize = "12px";
-
-      const opt = {
-        margin:       0.5,
-        filename:     'Valve_Inspection_Summary.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
-      };
-
-      html2pdf().set(opt).from(element).save();
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
