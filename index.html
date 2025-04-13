@@ -4,71 +4,108 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Valve Inspection App</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       background-color: black;
       color: white;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
       height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    .top-bar {
+      background-color: #222;
+      padding: 10px;
+      text-align: right;
+    }
+
+    .screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       justify-content: center;
-      text-align: center;
+      align-items: center;
     }
-    .container {
-      margin-top: 60px;
-    }
+
     input[type="number"] {
       font-size: 2em;
       padding: 10px;
       width: 80%;
+      max-width: 300px;
       margin-bottom: 20px;
     }
+
     button {
-      font-size: 1.5em;
+      font-size: 1.2em;
       padding: 10px 20px;
       margin: 10px;
     }
-    .top-bar {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      padding: 10px;
-      background-color: #222;
-      text-align: right;
-    }
-    .question, .summary {
-      margin: 20px;
-    }
+
     .hidden {
       display: none;
     }
-    .answer-buttons button {
-      margin: 5px;
+
+    .question {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      max-width: 80%;
+      text-align: center;
+    }
+
+    .answer-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .summary {
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      background: white;
+      color: black;
+      text-align: center;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 6px;
     }
   </style>
 </head>
 <body>
+
   <div class="top-bar">
     <button onclick="showSummary()">DONE</button>
   </div>
-  <div class="container" id="main-screen">
+
+  <div class="screen" id="main-screen">
     <input type="number" id="item-number" placeholder="Enter item number" />
-    <br/>
+    <br />
     <button onclick="startQuestions()">ENTER</button>
   </div>
 
-  <div class="container hidden" id="questionnaire">
+  <div class="screen hidden" id="questionnaire">
     <div class="question" id="question-text"></div>
     <div class="answer-buttons" id="answer-buttons"></div>
   </div>
 
-  <div class="container hidden" id="summary">
-    <h2>Summary</h2>
-    <div id="summary-table"></div>
-    <button onclick="downloadPDF()">Download PDF</button>
+  <div class="screen hidden" id="summary">
+    <div class="summary">
+      <h2 style="color: white;">Summary</h2>
+      <div id="summary-table"></div>
+      <button onclick="downloadPDF()">Download PDF</button>
+    </div>
   </div>
 
   <script>
@@ -138,26 +175,45 @@
     function showSummary() {
       const summary = document.getElementById("summary");
       const tableDiv = document.getElementById("summary-table");
-      let html = "<table border='1' style='width:100%; background:white; color:black; text-align:center;'><tr><th>Item</th>";
-      for (let i = 1; i <= 8; i++) html += "<th>Q" + i + "</th>";
-      html += "</tr>";
+
+      let html = "<table><thead><tr><th>Item</th>";
+      questions.forEach(q => {
+        html += `<th>${q.q}</th>`;
+      });
+      html += "</tr></thead><tbody>";
+
       Object.keys(data).sort().forEach(key => {
-        html += "<tr><td>" + key + "</td>";
-        data[key].forEach(ans => html += "<td>" + ans + "</td>");
+        html += `<tr><td>${key}</td>`;
+        data[key].forEach(ans => html += `<td>${ans}</td>`);
         html += "</tr>";
       });
-      html += "</table>";
+
+      html += "</tbody></table>";
       tableDiv.innerHTML = html;
+
       document.getElementById("main-screen").classList.add("hidden");
+      document.getElementById("questionnaire").classList.add("hidden");
       summary.classList.remove("hidden");
     }
 
     function downloadPDF() {
-      const summaryTable = document.getElementById("summary-table").innerHTML;
-      const win = window.open("", "_blank");
-      win.document.write("<html><head><title>Summary</title></head><body>" + summaryTable + "</body></html>");
-      win.document.close();
-      win.print();
+      const element = document.createElement('div');
+      element.innerHTML = document.getElementById("summary-table").innerHTML;
+      element.style.color = "black";
+      element.style.backgroundColor = "white";
+      element.style.padding = "20px";
+      element.style.fontSize = "12px";
+
+      const opt = {
+        margin:       0.5,
+        filename:     'Valve_Inspection_Summary.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak:    { mode: ['css', 'legacy'] }
+      };
+
+      html2pdf().set(opt).from(element).save();
     }
   </script>
 </body>
