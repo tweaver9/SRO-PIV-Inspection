@@ -60,7 +60,7 @@
 <script>
   async function fetchZones() {
     const response = await fetch("piv_zones.json");
-    if (!response.ok) throw new Error("zones.json not found");
+    if (!response.ok) throw new Error("piv_zones.json not found");
     return await response.json();
   }
 
