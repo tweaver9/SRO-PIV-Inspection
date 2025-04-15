@@ -187,10 +187,7 @@
       });
     }
   function goToZoneExport() {
-  // Optional: add current item if mid-question
-  if (currentPIV && answers.length === 8) {
-    pivData.push([currentPIV, ...answers, ""]);
-  }
+    alert("DONE button was clicked!") //test trigger
 
   // Save to localStorage
   localStorage.setItem("pivData", JSON.stringify(pivData || []));
