@@ -1,167 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
   <title>PIV Inspection</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: url('https://tweaver9.github.io/piv_background.jpeg') no-repeat center center fixed;
-      background-size: cover;
+      background-color: #000;
       color: white;
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      height: 100vh;
     }
-    .box {
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 20px;
-      border-radius: 10px;
-      text-align: center;
-    }
-    input[type="number"] {
-      font-size: 24px;
-      padding: 10px;
-      width: 150px;
-      text-align: center;
-    }
-    button {
-      font-size: 18px;
-      margin: 10px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-    }
-    .green { background-color: #4CAF50; color: white; }
-    .blue { background-color: #2196F3; color: white; }
-    .question-box {
-      margin-top: 20px;
-    }
+
     .hidden {
       display: none;
+    }
+
+    .screen {
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      font-size: 1.5em;
+      padding: 10px;
+      text-align: center;
+    }
+
+    button {
+      font-size: 1.2em;
+      margin: 10px;
+      padding: 10px 20px;
+      width: 80%;
+    }
+
+    #questionText {
+      font-size: 1.4em;
+      margin-bottom: 20px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      z-index: 999;
+    }
+
+    #modal p {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+
+    #modal button {
+      width: 150px;
     }
   </style>
 </head>
 <body>
 
-<div class="box" id="mainBox">
-  <input id="pivNumber" type="number" placeholder="Enter #" />
-  <br>
-  <button class="green" onclick="startPrompt()">Enter</button>
-  <button class="blue" onclick="generatePDF()">DONE</button>
+<div class="screen" id="entryScreen">
+  <input type="number" id="pivNumber" placeholder="Enter PIV number" />
+  <button onclick="handleStart()">Enter</button>
+  <button onclick="generatePDF()">DONE</button>
 </div>
 
-<div class="box hidden" id="promptBox">
+<div id="modal" class="hidden">
   <p>Does PIV have an issue?</p>
-  <button class="green" onclick="issueResponse(false)">No</button>
-  <button class="blue" onclick="issueResponse(true)">Yes</button>
+  <button onclick="handleResponse(false)">No</button>
+  <button onclick="handleResponse(true)">Yes</button>
 </div>
 
-<div class="box hidden" id="questionBox">
+<div class="screen hidden" id="questionScreen">
   <div id="questionText"></div>
-  <button onclick="answer('Yes')" class="green">Yes</button>
-  <button onclick="answer('No')" class="blue">No</button>
-  <button onclick="answer('Open')" class="green">Open</button>
-  <button onclick="answer('Good')" class="green">Good</button>
+  <div class="btn-group" id="answerButtons"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-  let currentPIV = "";
-  let currentQuestion = 0;
-  let tempAnswers = [];
-  const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
-
   const questions = [
-    { q: "Position of Valve", opts: ["Open", "Closed"] },
-    { q: "Sight glass condition", opts: ["Good", "Needs Repair"] },
-    { q: "Placard properly aligned", opts: ["Yes", "No"] },
-    { q: "Damage or corrosion on valve/body", opts: ["Yes", "No"] },
-    { q: "Identification easily visible", opts: ["Yes", "No"] },
-    { q: "Chained with functioning lock", opts: ["Yes", "No"] },
-    { q: "Any leaks from the valve or body", opts: ["Yes", "No"] },
-    { q: "Is there a wrench available", opts: ["Yes", "No"] }
+    { q: "1. Position of Valve", options: ["Open", "Closed"] },
+    { q: "2. Sight glass condition", options: ["Good", "Needs Repair"] },
+    { q: "3. Placard properly aligned", options: ["Yes", "No"] },
+    { q: "4. Damage or corrosion on valve/body", options: ["Yes", "No"] },
+    { q: "5. Identification easily visible", options: ["Yes", "No"] },
+    { q: "6. Chained with functioning lock", options: ["Yes", "No"] },
+    { q: "7. Any leaks from the valve or body", options: ["Yes", "No"] },
+    { q: "8. Is there a wrench available", options: ["Yes", "No"] }
   ];
 
-  function startPrompt() {
-    const number = document.getElementById("pivNumber").value;
-    if (!number) return alert("Enter a number.");
-    currentPIV = "PIV-" + number;
-    document.getElementById("mainBox").classList.add("hidden");
-    document.getElementById("promptBox").classList.remove("hidden");
+  let entries = JSON.parse(localStorage.getItem("pivData") || "[]");
+  let currentPIV = "";
+  let currentIndex = 0;
+  let tempAnswers = [];
+
+  function handleStart() {
+    const input = document.getElementById("pivNumber").value;
+    if (!input) return alert("Please enter a number.");
+    currentPIV = "PIV-" + input;
+    document.getElementById("modal").classList.remove("hidden");
   }
 
-  function issueResponse(hasIssue) {
-    document.getElementById("promptBox").classList.add("hidden");
+  function handleResponse(hasIssue) {
+    document.getElementById("modal").classList.add("hidden");
+
     if (!hasIssue) {
       const defaultAnswers = ["Open", "Good", "Yes", "No", "Yes", "Yes", "No", "Yes"];
       entries.push([currentPIV, ...defaultAnswers, ""]);
       localStorage.setItem("pivData", JSON.stringify(entries));
-      document.getElementById("mainBox").classList.remove("hidden");
-      document.getElementById("pivNumber").value = "";
-    } else {
-      tempAnswers = [];
-      currentQuestion = 0;
-      showQuestion();
+      reset();
+      return;
     }
+
+    currentIndex = 0;
+    tempAnswers = [];
+    document.getElementById("entryScreen").classList.add("hidden");
+    document.getElementById("questionScreen").classList.remove("hidden");
+    showQuestion();
   }
 
   function showQuestion() {
-    const box = document.getElementById("questionBox");
-    box.classList.remove("hidden");
-    const q = questions[currentQuestion];
-    const text = document.getElementById("questionText");
-    text.innerHTML = `<h3>${currentPIV}</h3><p>${q.q}</p>`;
-    // Hide/show relevant answer buttons
-    Array.from(box.querySelectorAll("button")).forEach(btn => {
-      btn.style.display = q.opts.includes(btn.textContent) ? "inline-block" : "none";
+    const q = questions[currentIndex];
+    document.getElementById("questionText").innerText = q.q;
+
+    const btnGroup = document.getElementById("answerButtons");
+    btnGroup.innerHTML = "";
+    q.options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.innerText = opt;
+      btn.onclick = () => {
+        tempAnswers.push(opt);
+        currentIndex++;
+        if (currentIndex < questions.length) {
+          showQuestion();
+        } else {
+          entries.push([currentPIV, ...tempAnswers, ""]);
+          localStorage.setItem("pivData", JSON.stringify(entries));
+          reset();
+        }
+      };
+      btnGroup.appendChild(btn);
     });
   }
 
-  function answer(val) {
-    tempAnswers.push(val);
-    currentQuestion++;
-    if (currentQuestion < questions.length) {
-      showQuestion();
-    } else {
-      entries.push([currentPIV, ...tempAnswers, ""]);
-      localStorage.setItem("pivData", JSON.stringify(entries));
-      document.getElementById("questionBox").classList.add("hidden");
-      document.getElementById("mainBox").classList.remove("hidden");
-      document.getElementById("pivNumber").value = "";
-    }
+  function reset() {
+    document.getElementById("pivNumber").value = "";
+    document.getElementById("entryScreen").classList.remove("hidden");
+    document.getElementById("questionScreen").classList.add("hidden");
   }
 
   function generatePDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "landscape" });
-    const headers = [
-      "PIV", "Position", "Sight", "Placard", "Corros.", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"
-    ];
-    const colWidth = 25;
+    const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
     const rowHeight = 10;
+    const colWidth = 25;
     const marginX = 10;
     const marginY = 20;
-    const rowsPerPage = 20;
+    const perPage = 20;
 
     for (let i = 0; i < entries.length; i++) {
-      if (i % rowsPerPage === 0) {
+      if (i % perPage === 0) {
         if (i > 0) doc.addPage();
-        headers.forEach((h, col) => {
-          doc.text(h, marginX + col * colWidth, marginY);
-        });
+        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
       }
-      const rowY = marginY + rowHeight * ((i % rowsPerPage) + 1);
+      const rowY = marginY + rowHeight * ((i % perPage) + 1);
       entries[i].forEach((val, col) => {
         doc.text(val, marginX + col * colWidth, rowY);
       });
     }
+
     doc.save("PIV_Inspection.pdf");
   }
 </script>
-
 </body>
 </html>
