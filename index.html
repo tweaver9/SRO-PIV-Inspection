@@ -186,7 +186,18 @@
         doc.text(val, marginX + col * colWidth, rowY);
       });
     }
-  
+  function goToZoneExport() {
+  // Optional: add current item if mid-question
+  if (currentPIV && answers.length === 8) {
+    pivData.push([currentPIV, ...answers, ""]);
+  }
+
+  // Save to localStorage
+  localStorage.setItem("pivData", JSON.stringify(pivData || []));
+
+  // Go to the zone-based export page
+  window.location.href = "zone-export.html";
+  }
     doc.save("PIV_Inspection.pdf");
   }
 </script>
