@@ -50,61 +50,58 @@
 <div class="screen">
   <h1>PIV Zone Export</h1>
   <div class="desc">
-    This tool uses your existing entries and sorts them into zones using <b>zones.json</b>.<br>
-    Click <b>DONE</b> to export a PDF grouped by zone and PIV number.<br>
-    (No data entry here—use the main app first.)
+    Uses entries from local storage<br>
+    and matches them to zones from <code>piv_zones.json</code><br>
+    Entries not matched will appear under <b>Unknown Zone</b>.
   </div>
   <button onclick="generateZonePDF()">DONE</button>
 </div>
 
 <script>
-  // Utility: Sort PIV-### as numbers, not text
+  async function fetchZones() {
+    const response = await fetch("piv_zones.json");
+    if (!response.ok) throw new Error("zones.json not found");
+    return await response.json();
+  }
+
   function pivNumber(piv) {
-    const match = piv.match(/PIV-(\d+)/);
+    const match = piv.match(/PIV-(\\d+)/);
     return match ? parseInt(match[1], 10) : 0;
   }
 
-  async function fetchZones() {
-    // Try to load zones.json from the same repo (works on GitHub Pages)
-    const resp = await fetch("zones.json");
-    if (!resp.ok) {
-      alert("Failed to load zones.json!");
-      throw new Error("zones.json missing");
-    }
-    return await resp.json();
-  }
-
-  function groupEntriesByZone(entries, zoneMap) {
+  function groupEntries(entries, zoneMap) {
     const grouped = {};
     for (const entry of entries) {
       const piv = entry[0];
-      const zone = zoneMap[piv] || "Unassigned";
+      const zone = zoneMap[piv] || "Unknown Zone";
       if (!grouped[zone]) grouped[zone] = [];
       grouped[zone].push(entry);
     }
-    // Sort zones alphabetically, then PIV numerically inside each
-    const zoneKeys = Object.keys(grouped).sort();
+
     const sorted = {};
-    for (const zone of zoneKeys) {
+    Object.keys(grouped).sort().forEach(zone => {
       sorted[zone] = grouped[zone].sort((a, b) => pivNumber(a[0]) - pivNumber(b[0]));
-    }
+    });
+
     return sorted;
   }
 
   async function generateZonePDF() {
     const pivEntries = JSON.parse(localStorage.getItem("pivData") || "[]");
     if (pivEntries.length === 0) {
-      alert("No entries found in local storage. Enter data in the main app first.");
+      alert("No saved entries found.");
       return;
     }
-    let zoneMap;
+
+    let zoneMap = {};
     try {
       zoneMap = await fetchZones();
     } catch (e) {
+      alert("Unable to load zone mapping.");
       return;
     }
-    const grouped = groupEntriesByZone(pivEntries, zoneMap);
 
+    const grouped = groupEntries(pivEntries, zoneMap);
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: "landscape" });
     const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
@@ -120,35 +117,32 @@
     for (const zone of Object.keys(grouped)) {
       const entries = grouped[zone];
       let startZone = true;
+
       for (let i = 0; i < entries.length; i++) {
         if (row % rowsPerPage === 0) {
           if (!firstPage) doc.addPage();
           firstPage = false;
           row = 0;
-          doc.setFontSize(14);
         }
-        // Zone header before the first row of each zone
+
         if (startZone) {
-          doc.setFontSize(16);
+          doc.setFontSize(14);
           doc.text(`Zone: ${zone}`, marginX, marginY - 7);
           doc.setFontSize(12);
           headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
-          startZone = false;
           row++;
+          startZone = false;
         }
+
         const y = marginY + rowHeight * row;
         entries[i].forEach((val, col) => {
           doc.text(val, marginX + col * colWidth, y);
         });
+
         row++;
-        // New page if out of space
-        if (row >= rowsPerPage) {
-          startZone = true;
-        }
       }
-      // Add a little space after each zone section
-      row++;
     }
+
     doc.save("PIV_Zone_Sorted.pdf");
   }
 </script>
