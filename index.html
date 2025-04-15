@@ -2,235 +2,204 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Valve Inspection App</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PIV Inspection App</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       margin: 0;
-      background: url('https://github.com/tweaver9/SRO-PIV-Inspection/blob/main/OIP.jpg) no-repeat center center fixed;
-      background-size: cover;
-      color: white;
       font-family: Arial, sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+      color: white;
+      background: url(https://github.com/tweaver9/SRO-PIV-Inspection/blob/main/OIP.jpg?raw=true') no-repeat center center fixed;
+      background-size: cover;
     }
 
-    .top-bar {
-      background-color: rgba(0, 0, 0, 0.7);
-      padding: 10px;
-      text-align: right;
-    }
-
-    .screen {
-      flex: 1;
+    .container {
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      min-height: 100vh;
       background-color: rgba(0, 0, 0, 0.7);
     }
 
     input[type="number"] {
-      font-size: 2em;
-      padding: 10px;
-      width: 100%;
-      max-width: 400px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    button {
-      font-size: 1.2em;
-      padding: 10px 20px;
-      margin: 10px;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .question {
       font-size: 1.5em;
-      margin-bottom: 20px;
-      max-width: 80%;
+      padding: 10px;
+      width: 250px;
       text-align: center;
+      margin-bottom: 10px;
     }
 
-    .answer-buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .button {
+      padding: 10px 20px;
+      font-size: 1.2em;
+      margin: 5px;
+      cursor: pointer;
     }
 
-    .summary {
+    .green {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+    }
+
+    .blue {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+    }
+
+    .question-box {
+      background: #111;
       padding: 20px;
-      overflow-x: auto;
+      border-radius: 10px;
+      margin-top: 20px;
     }
 
-    table {
+    .question-box select,
+    .question-box input[type="text"] {
+      font-size: 1.1em;
+      margin-bottom: 10px;
       width: 100%;
-      background: white;
-      color: black;
-      text-align: center;
-      border-collapse: collapse;
     }
 
-    th, td {
-      border: 1px solid black;
-      padding: 6px;
+    .question-label {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <input type="number" id="pivNumber" placeholder="Enter PIV number" />
+    <button class="button green" onclick="startEntry()">Enter</button>
+    <button class="button blue" onclick="exportToPDF()">DONE</button>
 
-  <div class="top-bar">
-    <button onclick="showSummary()">DONE</button>
-    <button onclick="clearData()">Reset</button>
-  </div>
+    <div id="questionContainer" class="question-box" style="display:none;">
+      <div class="question-label">1. Position of Valve</div>
+      <select id="q1"><option>Open</option><option>Closed</option></select>
 
-  <div class="screen" id="main-screen">
-    <input type="number" id="item-number" placeholder="Enter item number" />
-    <button onclick="startQuestions()">ENTER</button>
-  </div>
+      <div class="question-label">2. Sight Glass Condition</div>
+      <select id="q2"><option>Good</option><option>Needs Repair</option></select>
 
-  <div class="screen hidden" id="questionnaire">
-    <div class="question" id="question-text"></div>
-    <div class="answer-buttons" id="answer-buttons"></div>
-  </div>
+      <div class="question-label">3. Placard properly aligned</div>
+      <select id="q3"><option>Yes</option><option>No</option></select>
 
-  <div class="screen hidden" id="summary">
-    <div class="summary">
-      <h2 style="color: white;">Summary</h2>
-      <div id="summary-table"></div>
-      <button onclick="downloadPDF()">Download PDF</button>
+      <div class="question-label">4. Damage or corrosion on valve/body</div>
+      <select id="q4"><option>Yes</option><option>No</option></select>
+
+      <div class="question-label">5. Identification easily visible</div>
+      <select id="q5"><option>Yes</option><option>No</option></select>
+
+      <div class="question-label">6. Chained with functioning lock</div>
+      <select id="q6"><option>Yes</option><option>No</option></select>
+
+      <div class="question-label">7. Any leaks from the valve or body</div>
+      <select id="q7"><option>Yes</option><option>No</option></select>
+
+      <div class="question-label">8. Is there a wrench available</div>
+      <select id="q8"><option>Yes</option><option>No</option></select>
+
+      <div class="question-label">Comments</div>
+      <input type="text" id="comments" placeholder="Optional" />
+
+      <button class="button green" onclick="saveEntry()">Done</button>
     </div>
   </div>
 
   <script>
-    const questions = [
-      { q: "Position of Valve", options: ["Open", "Closed"] },
-      { q: "Sight glass condition", options: ["Good", "Needs Repair"] },
-      { q: "Placard properly aligned", options: ["Yes", "No"] },
-      { q: "Is there damage or corrosion to the valve/body", options: ["Yes", "No"] },
-      { q: "Is identification easily visible", options: ["Yes", "No"] },
-      { q: "Is it chained with functioning lock", options: ["Yes", "No"] },
-      { q: "Are there any leaks from the valve or body", options: ["Yes", "No"] },
-      { q: "Is there a wrench available", options: ["Yes", "No"] }
-    ];
+    let entries = JSON.parse(localStorage.getItem('pivEntries') || "[]");
 
-    const codeMap = {
-      "Yes": "Y",
-      "No": "N",
-      "Open": "O",
-      "Closed": "C",
-      "Good": "Y",
-      "Needs Repair": "N"
-    };
-
-    let currentItem = "";
-    let currentQuestion = 0;
-    let data = {};
-    let tempAnswers = [];
-
-    window.onload = () => {
-      const saved = localStorage.getItem("inspectionData");
-      if (saved) {
-        data = JSON.parse(saved);
-      }
-    };
-
-    function startQuestions() {
-      currentItem = document.getElementById("item-number").value;
-      if (!currentItem) return;
-      tempAnswers = [];
-      currentQuestion = 0;
-      document.getElementById("main-screen").classList.add("hidden");
-      document.getElementById("questionnaire").classList.remove("hidden");
-      showQuestion();
+    function startEntry() {
+      const num = document.getElementById('pivNumber').value;
+      if (num === "") return alert("Please enter a number");
+      document.getElementById('questionContainer').style.display = 'block';
     }
 
-    function showQuestion() {
-      const q = questions[currentQuestion];
-      document.getElementById("question-text").innerText = q.q;
-      const buttonContainer = document.getElementById("answer-buttons");
-      buttonContainer.innerHTML = "";
-      q.options.forEach(option => {
-        const btn = document.createElement("button");
-        btn.textContent = option;
-        btn.onclick = () => {
-          tempAnswers.push(codeMap[option]);
-          currentQuestion++;
-          if (currentQuestion < questions.length) {
-            showQuestion();
-          } else {
-            saveAnswers();
-          }
-        };
-        buttonContainer.appendChild(btn);
+    function saveEntry() {
+      const piv = document.getElementById('pivNumber').value;
+      const data = {
+        piv: `PIV-${piv}`,
+        q1: document.getElementById('q1').value,
+        q2: document.getElementById('q2').value,
+        q3: document.getElementById('q3').value,
+        q4: document.getElementById('q4').value,
+        q5: document.getElementById('q5').value,
+        q6: document.getElementById('q6').value,
+        q7: document.getElementById('q7').value,
+        q8: document.getElementById('q8').value,
+        comments: document.getElementById('comments').value || ""
+      };
+      entries.push(data);
+      entries.sort((a, b) => {
+        const getNum = x => parseInt(x.piv.replace("PIV-", ""));
+        return getNum(a) - getNum(b);
       });
+      localStorage.setItem('pivEntries', JSON.stringify(entries));
+      document.getElementById('questionContainer').style.display = 'none';
+      document.getElementById('pivNumber').value = '';
     }
 
-    function saveAnswers() {
-      const id = "PIV-" + currentItem.padStart(4, "0");
-      data[id] = tempAnswers;
-      localStorage.setItem("inspectionData", JSON.stringify(data));
-      document.getElementById("questionnaire").classList.add("hidden");
-      document.getElementById("main-screen").classList.remove("hidden");
-      document.getElementById("item-number").value = "";
-    }
+    function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
 
-    function showSummary() {
-      const summary = document.getElementById("summary");
-      const tableDiv = document.getElementById("summary-table");
+      const headers = [
+        "PIV",
+        "Position of Valve",
+        "Sight Glass",
+        "Placard Aligned",
+        "Corrosion/Damage",
+        "ID Visible",
+        "Chained",
+        "Leaks",
+        "Wrench",
+        "Comments"
+      ];
 
-      let html = "<table><thead><tr><th>Item</th>";
-      questions.forEach(q => {
-        html += `<th>${q.q}</th>`;
-      });
-      html += "</tr></thead><tbody>";
-
-      Object.keys(data).sort().forEach(key => {
-        html += `<tr><td>${key}</td>`;
-        data[key].forEach(ans => html += `<td>${ans}</td>`);
-        html += "</tr>";
-      });
-
-      html += "</tbody></table>";
-      tableDiv.innerHTML = html;
-
-      document.getElementById("main-screen").classList.add("hidden");
-      document.getElementById("questionnaire").classList.add("hidden");
-      summary.classList.remove("hidden");
-    }
-
-    function downloadPDF() {
-      const element = document.createElement('div');
-      element.innerHTML = document.getElementById("summary-table").innerHTML;
-      element.style.color = "black";
-      element.style.backgroundColor = "white";
-      element.style.padding = "20px";
-      element.style.fontSize = "12px";
-
-      const opt = {
-        margin:       0.5,
-        filename:     'Valve_Inspection_Summary.pdf',
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
+      const shortMap = {
+        "Yes": "Y", "No": "N", "Open": "O", "Closed": "C", "Good": "G", "Needs Repair": "R"
       };
 
-      html2pdf().set(opt).from(element).save();
-    }
+      const colWidth = 27;
+      const rowHeight = 10;
+      const startX = 10;
+      let startY = 20;
 
-    function clearData() {
-      if (confirm("Are you sure you want to reset all saved data?")) {
-        localStorage.removeItem("inspectionData");
-        data = {};
-        location.reload();
+      for (let p = 0; p < entries.length; p += 20) {
+        if (p > 0) doc.addPage('landscape');
+
+        // Draw rotated headers
+        headers.forEach((h, i) => {
+          doc.saveGraphicsState();
+          doc.text(h, startX + i * colWidth + 3, startY - 5, { angle: 90 });
+          doc.restoreGraphicsState();
+        });
+
+        // Draw grid and data
+        for (let r = 0; r < 20; r++) {
+          const entry = entries[p + r];
+          const y = startY + r * rowHeight;
+          for (let c = 0; c < headers.length; c++) {
+            doc.rect(startX + c * colWidth, y, colWidth, rowHeight);
+            if (entry) {
+              const val = c === 0 ? entry.piv :
+                          c === 1 ? shortMap[entry.q1] :
+                          c === 2 ? shortMap[entry.q2] :
+                          c === 3 ? shortMap[entry.q3] :
+                          c === 4 ? shortMap[entry.q4] :
+                          c === 5 ? shortMap[entry.q5] :
+                          c === 6 ? shortMap[entry.q6] :
+                          c === 7 ? shortMap[entry.q7] :
+                          c === 8 ? shortMap[entry.q8] :
+                          entry.comments;
+              doc.text(val, startX + c * colWidth + 2, y + 7);
+            }
+          }
+        }
       }
+
+      doc.save("PIV-Inspection.pdf");
     }
   </script>
 </body>
