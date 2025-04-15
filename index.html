@@ -2,205 +2,159 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PIV Inspection App</title>
+  <title>PIV Catalog</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       margin: 0;
+      background: black;
       font-family: Arial, sans-serif;
       color: white;
-      background: url(https://github.com/tweaver9/SRO-PIV-Inspection/blob/main/OIP.jpg?raw=true') no-repeat center center fixed;
-      background-size: cover;
-    }
-
-    .container {
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      background-color: rgba(0, 0, 0, 0.7);
+      height: 100vh;
+      flex-direction: column;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     input[type="number"] {
-      font-size: 1.5em;
+      width: 300px;
+      font-size: 24px;
       padding: 10px;
-      width: 250px;
       text-align: center;
-      margin-bottom: 10px;
     }
 
-    .button {
+    button {
+      margin: 15px;
       padding: 10px 20px;
-      font-size: 1.2em;
-      margin: 5px;
-      cursor: pointer;
+      font-size: 18px;
     }
 
-    .green {
-      background-color: #4CAF50;
+    #plus {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: green;
       color: white;
       border: none;
-    }
-
-    .blue {
-      background-color: #2196F3;
-      color: white;
-      border: none;
-    }
-
-    .question-box {
-      background: #111;
-      padding: 20px;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-
-    .question-box select,
-    .question-box input[type="text"] {
-      font-size: 1.1em;
-      margin-bottom: 10px;
-      width: 100%;
-    }
-
-    .question-label {
-      margin-top: 10px;
+      padding: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <input type="number" id="pivNumber" placeholder="Enter PIV number" />
-    <button class="button green" onclick="startEntry()">Enter</button>
-    <button class="button blue" onclick="exportToPDF()">DONE</button>
-
-    <div id="questionContainer" class="question-box" style="display:none;">
-      <div class="question-label">1. Position of Valve</div>
-      <select id="q1"><option>Open</option><option>Closed</option></select>
-
-      <div class="question-label">2. Sight Glass Condition</div>
-      <select id="q2"><option>Good</option><option>Needs Repair</option></select>
-
-      <div class="question-label">3. Placard properly aligned</div>
-      <select id="q3"><option>Yes</option><option>No</option></select>
-
-      <div class="question-label">4. Damage or corrosion on valve/body</div>
-      <select id="q4"><option>Yes</option><option>No</option></select>
-
-      <div class="question-label">5. Identification easily visible</div>
-      <select id="q5"><option>Yes</option><option>No</option></select>
-
-      <div class="question-label">6. Chained with functioning lock</div>
-      <select id="q6"><option>Yes</option><option>No</option></select>
-
-      <div class="question-label">7. Any leaks from the valve or body</div>
-      <select id="q7"><option>Yes</option><option>No</option></select>
-
-      <div class="question-label">8. Is there a wrench available</div>
-      <select id="q8"><option>Yes</option><option>No</option></select>
-
-      <div class="question-label">Comments</div>
-      <input type="text" id="comments" placeholder="Optional" />
-
-      <button class="button green" onclick="saveEntry()">Done</button>
-    </div>
+  <button id="plus">＋</button>
+  <div id="container">
+    <input id="pivNumber" type="number" placeholder="Enter PIV number" />
+    <button onclick="startEntry()">Enter</button>
+    <button onclick="generatePDF()">Done</button>
   </div>
 
   <script>
-    let entries = JSON.parse(localStorage.getItem('pivEntries') || "[]");
+    const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
 
-    function startEntry() {
-      const num = document.getElementById('pivNumber').value;
-      if (num === "") return alert("Please enter a number");
-      document.getElementById('questionContainer').style.display = 'block';
+    const questions = [
+      "Position of Valve",
+      "Sight glass condition",
+      "Placard properly aligned",
+      "Is there damage or corrosion to the valve/body",
+      "Is identification easily visible",
+      "Is it chained with functioning lock",
+      "Are there any leaks from the valve or body",
+      "Is there a wrench available"
+    ];
+
+    const options = [
+      ["Open", "Closed"],
+      ["Good", "Needs Repair"],
+      ["Yes", "No"],
+      ["Yes", "No"],
+      ["Yes", "No"],
+      ["Yes", "No"],
+      ["Yes", "No"],
+      ["Yes", "No"]
+    ];
+
+    async function startEntry() {
+      const num = document.getElementById("pivNumber").value;
+      if (!num) return alert("Enter a PIV number first!");
+      const piv = `PIV-${num}`;
+
+      const issue = confirm("Does PIV have an issue?");
+      if (!issue) {
+        entries.push([piv, "Open", "Good", "Yes", "No", "Yes", "Yes", "No", "Yes", ""]);
+        saveEntries();
+        document.getElementById("pivNumber").value = "";
+        return;
+      }
+
+      let answers = [piv];
+      for (let i = 0; i < questions.length; i++) {
+        const a = prompt(`${questions[i]}?\n(${options[i].join(" / ")})`);
+        if (!a) return alert("Entry canceled.");
+        answers.push(a);
+      }
+      answers.push(""); // comments column
+      entries.push(answers);
+      saveEntries();
+      document.getElementById("pivNumber").value = "";
     }
 
-    function saveEntry() {
-      const piv = document.getElementById('pivNumber').value;
-      const data = {
-        piv: `PIV-${piv}`,
-        q1: document.getElementById('q1').value,
-        q2: document.getElementById('q2').value,
-        q3: document.getElementById('q3').value,
-        q4: document.getElementById('q4').value,
-        q5: document.getElementById('q5').value,
-        q6: document.getElementById('q6').value,
-        q7: document.getElementById('q7').value,
-        q8: document.getElementById('q8').value,
-        comments: document.getElementById('comments').value || ""
-      };
-      entries.push(data);
-      entries.sort((a, b) => {
-        const getNum = x => parseInt(x.piv.replace("PIV-", ""));
-        return getNum(a) - getNum(b);
-      });
-      localStorage.setItem('pivEntries', JSON.stringify(entries));
-      document.getElementById('questionContainer').style.display = 'none';
-      document.getElementById('pivNumber').value = '';
+    function saveEntries() {
+      localStorage.setItem("pivData", JSON.stringify(entries));
     }
 
-    function exportToPDF() {
+    function generatePDF() {
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
+      const doc = new jsPDF({ orientation: "landscape" });
 
-      const headers = [
-        "PIV",
-        "Position of Valve",
-        "Sight Glass",
-        "Placard Aligned",
-        "Corrosion/Damage",
-        "ID Visible",
-        "Chained",
-        "Leaks",
-        "Wrench",
-        "Comments"
+      const header = [
+        "PIV", "Position", "Sight", "Placard", "Corros.", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"
       ];
-
-      const shortMap = {
-        "Yes": "Y", "No": "N", "Open": "O", "Closed": "C", "Good": "G", "Needs Repair": "R"
-      };
 
       const colWidth = 25;
       const rowHeight = 10;
-      const startX = 10;
-      let startY = 20;
+      const marginX = 10;
+      const marginY = 20;
+      const rowsPerPage = 20;
 
-      for (let p = 0; p < entries.length; p += 20) {
-        if (p > 0) doc.addPage('landscape');
+      let page = 0;
 
-        // Draw rotated headers
-        headers.forEach((h, i) => {
-          doc.saveGraphicsState();
-          doc.text(h, startX + i * colWidth + 3, startY - 5, { angle: 90 });
-          doc.restoreGraphicsState();
-        });
-
-        // Draw grid and data
-        for (let r = 0; r < 20; r++) {
-          const entry = entries[p + r];
-          const y = startY + r * rowHeight;
-          for (let c = 0; c < headers.length; c++) {
-            doc.rect(startX + c * colWidth, y, colWidth, rowHeight);
-            if (entry) {
-              const val = c === 0 ? entry.piv :
-                          c === 1 ? shortMap[entry.q1] :
-                          c === 2 ? shortMap[entry.q2] :
-                          c === 3 ? shortMap[entry.q3] :
-                          c === 4 ? shortMap[entry.q4] :
-                          c === 5 ? shortMap[entry.q5] :
-                          c === 6 ? shortMap[entry.q6] :
-                          c === 7 ? shortMap[entry.q7] :
-                          c === 8 ? shortMap[entry.q8] :
-                          entry.comments;
-              doc.text(val, startX + c * colWidth + 2, y + 7);
-            }
-          }
+      for (let i = 0; i < entries.length; i++) {
+        if (i % rowsPerPage === 0) {
+          if (i !== 0) doc.addPage();
+          header.forEach((text, col) => {
+            doc.text(text, marginX + col * colWidth, marginY);
+          });
         }
+
+        const rowY = marginY + rowHeight * ((i % rowsPerPage) + 1);
+        entries[i].forEach((val, col) => {
+          doc.text(val, marginX + col * colWidth, rowY);
+        });
       }
 
-      doc.save("PIV-Inspection.pdf");
+      doc.save("PIV_Entries.pdf");
     }
+
+    document.getElementById("plus").addEventListener("click", () => {
+      const piv = prompt("Enter PIV number:");
+      if (piv) {
+        const answerSet = [];
+        for (let i = 0; i < questions.length; i++) {
+          const ans = prompt(`${questions[i]}?\n(${options[i].join(" / ")})`);
+          if (!ans) return;
+          answerSet.push(ans);
+        }
+        entries.push([`PIV-${piv}`, ...answerSet, ""]);
+        saveEntries();
+      }
+    });
   </script>
 </body>
 </html>
