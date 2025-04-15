@@ -80,7 +80,7 @@
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
   <button class="green" onclick="start()">Enter</button>
-  <button class="blue" onclick="generatePDF()">DONE</button>
+  <button class="blue" onclick="goToZoneExport()">DONE</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -186,7 +186,7 @@
         doc.text(val, marginX + col * colWidth, rowY);
       });
     }
-
+  
     doc.save("PIV_Inspection.pdf");
   }
 </script>
