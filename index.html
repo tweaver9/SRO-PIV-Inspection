@@ -1,160 +1,138 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>PIV Catalog</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>PIV Inspection</title>
   <style>
     body {
-      margin: 0;
-      background: black;
-      font-family: Arial, sans-serif;
+      background-color: #333;
       color: white;
+      font-family: Arial, sans-serif;
       display: flex;
+      flex-direction: column;
+      align-items: center;
       justify-content: center;
-      align-items: center;
       height: 100vh;
-      flex-direction: column;
+      margin: 0;
     }
-
-    #container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    input[type="number"] {
-      width: 300px;
-      font-size: 24px;
-      padding: 10px;
+    .input-section, .form-section {
+      margin: 20px;
       text-align: center;
     }
-
-    button {
-      margin: 15px;
-      padding: 10px 20px;
-      font-size: 18px;
-    }
-
-    #plus {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background-color: green;
-      color: white;
-      border: none;
+    input[type="number"] {
       padding: 10px;
+      font-size: 20px;
+      width: 100px;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+    }
+    select, textarea {
+      width: 90%;
+      padding: 8px;
+      margin: 5px 0;
+    }
+    .form-container {
+      width: 90%;
+      max-width: 500px;
+      background-color: #111;
+      padding: 20px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-  <button id="plus">＋</button>
-  <div id="container">
-    <input id="pivNumber" type="number" placeholder="Enter PIV number" />
-    <button onclick="startEntry()">Enter</button>
-    <button onclick="generatePDF()">Done</button>
+
+<div class="input-section">
+  <input type="number" id="pivNumber" placeholder="Enter #" />
+  <br>
+  <button onclick="handleEntry()">Enter</button>
+</div>
+
+<div class="form-section" style="display:none;" id="formSection">
+  <div class="form-container" id="formContainer">
+    <form id="pivForm">
+      <div id="formFields"></div>
+      <textarea id="comments" placeholder="Comments"></textarea><br>
+      <button type="button" onclick="saveEntry()">DONE</button>
+    </form>
   </div>
+</div>
 
-  <script>
-    const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
+<script>
+  const questions = [
+    "Position of Valve",
+    "Sight Glass Condition",
+    "Placard properly aligned",
+    "Damage or corrosion on valve/body",
+    "Identification easily visible",
+    "Chained with functioning lock",
+    "Any leaks from the valve or body",
+    "Is there a wrench available"
+  ];
 
-    const questions = [
-      "Position of Valve",
-      "Sight glass condition",
-      "Placard properly aligned",
-      "Is there damage or corrosion to the valve/body",
-      "Is identification easily visible",
-      "Is it chained with functioning lock",
-      "Are there any leaks from the valve or body",
-      "Is there a wrench available"
-    ];
+  const defaultAnswers = ["Open", "Good", "Yes", "No", "Yes", "Yes", "No", "Yes"];
 
-    const options = [
-      ["Open", "Closed"],
-      ["Good", "Needs Repair"],
-      ["Yes", "No"],
-      ["Yes", "No"],
-      ["Yes", "No"],
-      ["Yes", "No"],
-      ["Yes", "No"],
-      ["Yes", "No"]
-    ];
+  function handleEntry() {
+    const number = document.getElementById("pivNumber").value;
+    if (!number) return alert("Please enter a number.");
+    const piv = `PIV-${number}`;
 
-    async function startEntry() {
-      const num = document.getElementById("pivNumber").value;
-      if (!num) return alert("Enter a PIV number first!");
-      const piv = `PIV-${num}`;
+    const hasIssue = confirm("Does PIV have an issue?");
 
-      const issue = confirm("Does PIV have an issue?");
-      if (!issue) {
-        entries.push([piv, "Open", "Good", "Yes", "No", "Yes", "Yes", "No", "Yes", ""]);
-        saveEntries();
-        document.getElementById("pivNumber").value = "";
-        return;
-      }
-
-      let answers = [piv];
-      for (let i = 0; i < questions.length; i++) {
-        const a = prompt(`${questions[i]}?\n(${options[i].join(" / ")})`);
-        if (!a) return alert("Entry canceled.");
-        answers.push(a);
-      }
-      answers.push(""); // comments column
-      entries.push(answers);
-      saveEntries();
+    if (!hasIssue) {
+      const entry = {
+        piv,
+        answers: defaultAnswers,
+        comments: ""
+      };
+      storeEntry(entry);
+      alert(`Saved entry for ${piv}`);
       document.getElementById("pivNumber").value = "";
+    } else {
+      showForm(piv);
     }
+  }
 
-    function saveEntries() {
-      localStorage.setItem("pivData", JSON.stringify(entries));
-    }
-
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: "landscape" });
-
-      const header = [
-        "PIV", "Position", "Sight", "Placard", "Corros.", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"
-      ];
-
-      const colWidth = 25;
-      const rowHeight = 10;
-      const marginX = 10;
-      const marginY = 20;
-      const rowsPerPage = 20;
-
-      let page = 0;
-
-      for (let i = 0; i < entries.length; i++) {
-        if (i % rowsPerPage === 0) {
-          if (i !== 0) doc.addPage();
-          header.forEach((text, col) => {
-            doc.text(text, marginX + col * colWidth, marginY);
-          });
-        }
-
-        const rowY = marginY + rowHeight * ((i % rowsPerPage) + 1);
-        entries[i].forEach((val, col) => {
-          doc.text(val, marginX + col * colWidth, rowY);
-        });
-      }
-
-      doc.save("PIV_Entries.pdf");
-    }
-
-    document.getElementById("plus").addEventListener("click", () => {
-      const piv = prompt("Enter PIV number:");
-      if (piv) {
-        const answerSet = [];
-        for (let i = 0; i < questions.length; i++) {
-          const ans = prompt(`${questions[i]}?\n(${options[i].join(" / ")})`);
-          if (!ans) return;
-          answerSet.push(ans);
-        }
-        entries.push([`PIV-${piv}`, ...answerSet, ""]);
-        saveEntries();
-      }
+  function showForm(piv) {
+    const formFields = document.getElementById("formFields");
+    formFields.innerHTML = `<h3>${piv}</h3>`;
+    questions.forEach((q, index) => {
+      formFields.innerHTML += `
+        <label>${index + 1}. ${q}</label><br>
+        <select required>
+          <option value="">Select</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+          <option value="Open">Open</option>
+          <option value="Good">Good</option>
+        </select><br>
+      `;
     });
-  </script>
+    document.getElementById("formSection").style.display = "block";
+  }
+
+  function saveEntry() {
+    const selects = document.querySelectorAll("#formFields select");
+    const answers = Array.from(selects).map(s => s.value);
+    if (answers.some(a => a === "")) return alert("Please complete all fields.");
+    const piv = document.querySelector("#formFields h3").textContent;
+    const comments = document.getElementById("comments").value;
+    const entry = { piv, answers, comments };
+    storeEntry(entry);
+    document.getElementById("formSection").style.display = "none";
+    document.getElementById("pivForm").reset();
+    alert(`Saved entry for ${piv}`);
+  }
+
+  function storeEntry(entry) {
+    const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
+    entries.push(entry);
+    localStorage.setItem("pivData", JSON.stringify(entries));
+  }
+</script>
+
 </body>
 </html>
