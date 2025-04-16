@@ -102,6 +102,12 @@
   <button class="green" onclick="submitUnmarked()">Submit</button>
 </div>
 
+<!-- Only shown after DONE is pressed -->
+<div class="screen hidden" id="viewButtons">
+  <button class="green" onclick="window.location.href='zone-options.html?mode=view'">View Entries</button>
+  <button class="blue" onclick="window.location.href='zone-options.html'">Organize and Print</button>
+</div>
+
 <script>
   const questions = [
     { q: "1. Position of Valve", options: ["Open", "Closed"] },
@@ -204,27 +210,7 @@
   }
 
   function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: "landscape" });
-    const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
-    const rowHeight = 10;
-    const colWidth = 25;
-    const marginX = 10;
-    const marginY = 20;
-    const perPage = 20;
-
-    for (let i = 0; i < entries.length; i++) {
-      if (i % perPage === 0) {
-        if (i > 0) doc.addPage();
-        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
-      }
-      const rowY = marginY + rowHeight * ((i % perPage) + 1);
-      entries[i].forEach((val, col) => {
-        doc.text(val, marginX + col * colWidth, rowY);
-      });
-    }
-
-    doc.save("PIV_Inspection.pdf");
+    document.getElementById("viewButtons").classList.remove("hidden");
   }
 </script>
 </body>
