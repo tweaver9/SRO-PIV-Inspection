@@ -80,7 +80,7 @@
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
   <button class="green" onclick="start()">Enter</button>
-  <button class="blue" onclick="goToZoneOptions()">DONE</button>
+  <button class="blue" onclick="generatePDF()">DONE</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -92,6 +92,11 @@
 <div class="screen hidden" id="questionScreen">
   <div class="question-text" id="questionText"></div>
   <div id="answerButtons"></div>
+</div>
+
+<div class="hidden" id="viewButtons" style="margin-top: 30px; text-align: center;">
+  <button class="green" onclick="window.location.href='zone-options.html?mode=view'">View Entries</button>
+  <button class="blue" onclick="window.location.href='zone-options.html'">Organize and Print</button>
 </div>
 
 <script>
@@ -166,14 +171,9 @@
     document.getElementById("entryScreen").classList.remove("hidden");
   }
 
-  // NEW: Redirect to zone options page
-  function goToZoneOptions() {
-    if (currentPIV && tempAnswers.length === 8) {
-      entries.push([currentPIV, ...tempAnswers, ""]);
-    }
-
-    localStorage.setItem("pivData", JSON.stringify(entries || []));
-    window.location.href = "zone-options.html";
+  function generatePDF() {
+    localStorage.setItem("pivData", JSON.stringify(entries));
+    document.getElementById("viewButtons").classList.remove("hidden");
   }
 </script>
 </body>
