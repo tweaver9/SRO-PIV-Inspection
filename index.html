@@ -26,7 +26,8 @@
       text-align: center;
     }
 
-    input[type="number"] {
+    input[type="number"],
+    input[type="text"] {
       font-size: 28px;
       padding: 10px;
       width: 80%;
@@ -103,6 +104,12 @@
   <div id="answerButtons"></div>
 </div>
 
+<div class="screen hidden" id="locationScreen">
+  <div class="question-text">Enter Location:</div>
+  <input type="text" id="locationInput" placeholder="Required" />
+  <button class="green" onclick="submitLocation()">Next</button>
+</div>
+
 <div class="screen hidden" id="viewButtons">
   <h2>Export Options</h2>
   <button class="green" onclick="window.location.href='zone-options.html?mode=view'">View Entries</button>
@@ -125,17 +132,32 @@
   let currentPIV = "";
   let currentIndex = 0;
   let tempAnswers = [];
+  let isUnmarked = false;
+  let tempLocation = "";
 
   function start() {
     const number = document.getElementById("pivNumber").value;
     if (!number) return alert("Please enter a number.");
     currentPIV = "PIV-" + number;
+    isUnmarked = false;
     document.getElementById("modal").classList.add("active");
   }
 
   function startUnmarked() {
     currentPIV = "PIV-000";
+    isUnmarked = true;
+    tempAnswers = [];
+    tempLocation = "";
     document.getElementById("pivNumber").value = "";
+    document.getElementById("entryScreen").classList.add("hidden");
+    document.getElementById("locationScreen").classList.remove("hidden");
+  }
+
+  function submitLocation() {
+    const location = document.getElementById("locationInput").value.trim();
+    if (!location) return alert("Location is required.");
+    tempLocation = location;
+    document.getElementById("locationScreen").classList.add("hidden");
     document.getElementById("modal").classList.add("active");
   }
 
@@ -144,7 +166,10 @@
 
     if (!hasIssue) {
       const defaultAnswers = ["Open", "Good", "Yes", "No", "Yes", "Yes", "No", "Yes"];
-      entries.push([currentPIV, ...defaultAnswers, ""]);
+      const fullEntry = isUnmarked
+        ? [currentPIV, ...defaultAnswers, tempLocation]
+        : [currentPIV, ...defaultAnswers, ""];
+      entries.push(fullEntry);
       localStorage.setItem("pivData", JSON.stringify(entries));
       resetScreens();
     } else {
@@ -172,7 +197,10 @@
         if (currentIndex < questions.length) {
           showQuestion();
         } else {
-          entries.push([currentPIV, ...tempAnswers, ""]);
+          const fullEntry = isUnmarked
+            ? [currentPIV, ...tempAnswers, tempLocation]
+            : [currentPIV, ...tempAnswers, ""];
+          entries.push(fullEntry);
           localStorage.setItem("pivData", JSON.stringify(entries));
           resetScreens();
         }
@@ -184,15 +212,15 @@
   function resetScreens() {
     document.getElementById("pivNumber").value = "";
     document.getElementById("questionScreen").classList.add("hidden");
+    document.getElementById("locationScreen").classList.add("hidden");
     document.getElementById("entryScreen").classList.remove("hidden");
   }
 
   function generatePDF() {
     localStorage.setItem("pivData", JSON.stringify(entries));
-
-    // NEW: reset session state
     currentPIV = "";
     tempAnswers = [];
+    tempLocation = "";
     currentIndex = 0;
 
     document.getElementById("entryScreen").classList.add("hidden");
