@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>PIV Inspection</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     html, body {
@@ -26,7 +26,7 @@
       text-align: center;
     }
 
-    input[type="number"] {
+    input[type="number"], input[type="text"] {
       font-size: 28px;
       padding: 10px;
       width: 80%;
@@ -47,6 +47,7 @@
 
     .green { background-color: #28a745; color: white; }
     .blue { background-color: #007bff; color: white; }
+    .small { font-size: 18px; padding: 8px 14px; max-width: 200px; }
 
     #modal {
       position: absolute;
@@ -80,7 +81,8 @@
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
   <button class="green" onclick="start()">Enter</button>
-  <button class="blue" onclick="goToZoneOptions()">DONE</button>
+  <button class="blue" onclick="generatePDF()">DONE</button>
+  <button class="blue small" onclick="startUnmarked()">Unmarked</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -110,6 +112,8 @@
   let currentPIV = "";
   let currentIndex = 0;
   let tempAnswers = [];
+  let unmarkedMode = false;
+  let unmarkedCount = 1;
 
   function start() {
     const number = document.getElementById("pivNumber").value;
@@ -118,14 +122,24 @@
     document.getElementById("modal").classList.add("active");
   }
 
+  function startUnmarked() {
+    currentPIV = "Unmarked-" + unmarkedCount++;
+    unmarkedMode = true;
+    document.getElementById("modal").classList.add("active");
+  }
+
   function issueResponse(hasIssue) {
     document.getElementById("modal").classList.remove("active");
 
     if (!hasIssue) {
       const defaultAnswers = ["Open", "Good", "Yes", "No", "Yes", "Yes", "No", "Yes"];
-      entries.push([currentPIV, ...defaultAnswers, ""]);
-      localStorage.setItem("pivData", JSON.stringify(entries));
-      resetScreens();
+      if (unmarkedMode) {
+        askLocation(defaultAnswers);
+      } else {
+        entries.push([currentPIV, ...defaultAnswers, ""]);
+        localStorage.setItem("pivData", JSON.stringify(entries));
+        resetScreens();
+      }
     } else {
       currentIndex = 0;
       tempAnswers = [];
@@ -150,6 +164,8 @@
         currentIndex++;
         if (currentIndex < questions.length) {
           showQuestion();
+        } else if (unmarkedMode) {
+          askLocation(tempAnswers);
         } else {
           entries.push([currentPIV, ...tempAnswers, ""]);
           localStorage.setItem("pivData", JSON.stringify(entries));
@@ -160,20 +176,84 @@
     });
   }
 
+  function askLocation(answerList) {
+    document.getElementById("questionText").innerText = `${currentPIV}\nLocation:`;
+    const btns = document.getElementById("answerButtons");
+    btns.innerHTML = "";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "Enter location";
+    input.id = "locationInput";
+    input.maxLength = 100;
+    btns.appendChild(input);
+
+    const submitBtn = document.createElement("button");
+    submitBtn.textContent = "Submit";
+    submitBtn.className = "green";
+    submitBtn.onclick = () => {
+      const location = document.getElementById("locationInput").value || "";
+      entries.push([currentPIV, ...answerList, location]);
+      localStorage.setItem("pivData", JSON.stringify(entries));
+      resetScreens();
+    };
+    btns.appendChild(submitBtn);
+  }
+
   function resetScreens() {
     document.getElementById("pivNumber").value = "";
     document.getElementById("questionScreen").classList.add("hidden");
     document.getElementById("entryScreen").classList.remove("hidden");
+    unmarkedMode = false;
   }
 
-  // NEW: Redirect to zone options page
-  function goToZoneOptions() {
-    if (currentPIV && tempAnswers.length === 8) {
-      entries.push([currentPIV, ...tempAnswers, ""]);
+  function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape" });
+    const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
+    const rowHeight = 10;
+    const colWidth = 25;
+    const marginX = 10;
+    const marginY = 20;
+    const perPage = 20;
+
+    const regular = entries.filter(e => !e[0].startsWith("Unmarked"));
+    const unmarked = entries.filter(e => e[0].startsWith("Unmarked"));
+
+    for (let i = 0; i < regular.length; i++) {
+      if (i % perPage === 0) {
+        if (i > 0) doc.addPage();
+        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+      }
+      const rowY = marginY + rowHeight * ((i % perPage) + 1);
+      regular[i].forEach((val, col) => {
+        doc.text(val, marginX + col * colWidth, rowY);
+      });
     }
 
-    localStorage.setItem("pivData", JSON.stringify(entries || []));
-    window.location.href = "zone-options.html";
+    if (unmarked.length) {
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.text("Unmarked PIVs", marginX, marginY - 7);
+      doc.setFontSize(12);
+      headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+
+      for (let i = 0; i < unmarked.length; i++) {
+        if (i > 0 && i % perPage === 0) {
+          doc.addPage();
+          doc.setFontSize(14);
+          doc.text("Unmarked PIVs (cont.)", marginX, marginY - 7);
+          doc.setFontSize(12);
+          headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+        }
+        const rowY = marginY + rowHeight * ((i % perPage) + 1);
+        unmarked[i].forEach((val, col) => {
+          doc.text(val, marginX + col * colWidth, rowY);
+        });
+      }
+    }
+
+    doc.save("PIV_Inspection.pdf");
   }
 </script>
 </body>
