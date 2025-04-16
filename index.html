@@ -15,19 +15,6 @@
       width: 100%;
     }
   
-    #background-layer {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: url('https://github.com/tweaver9/SRO-PIV-Inspection/IMG_3110.jpeg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  z-index: -1;
-  opacity: 0.3; /* You can adjust this for brightness */
-    }
-  
     .screen {
       display: flex;
       flex-direction: column;
@@ -94,10 +81,22 @@
     .hidden {
       display: none;
     }
-  </style>
+#bg-img {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('./https://tweaver9.github.io/SRO-PIV-Inspection/IMG_3110.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.25;
+  z-index: -1;
+}
+</style>
 </head>
 <body>
-<div id="background-layer"></div>
+<div id="bg-img"></div>
 
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
