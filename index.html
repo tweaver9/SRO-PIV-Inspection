@@ -26,7 +26,8 @@
       text-align: center;
     }
 
-    input[type="number"] {
+    input[type="number"],
+    input[type="text"] {
       font-size: 28px;
       padding: 10px;
       width: 80%;
@@ -80,7 +81,8 @@
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
   <button class="green" onclick="start()">Enter</button>
-  <button class="blue" onclick="goToZoneOptions()">DONE</button>
+  <button class="blue" onclick="generatePDF()">DONE</button>
+  <button class="blue" onclick="startUnmarked()">Unmarked</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -92,6 +94,12 @@
 <div class="screen hidden" id="questionScreen">
   <div class="question-text" id="questionText"></div>
   <div id="answerButtons"></div>
+</div>
+
+<div class="screen hidden" id="locationScreen">
+  <div class="question-text">Location:</div>
+  <input type="text" id="locationInput" placeholder="Enter location" />
+  <button class="green" onclick="submitUnmarked()">Submit</button>
 </div>
 
 <script>
@@ -110,12 +118,26 @@
   let currentPIV = "";
   let currentIndex = 0;
   let tempAnswers = [];
+  let isUnmarked = false;
 
   function start() {
     const number = document.getElementById("pivNumber").value;
     if (!number) return alert("Please enter a number.");
     currentPIV = "PIV-" + number;
+    isUnmarked = false;
     document.getElementById("modal").classList.add("active");
+  }
+
+  function startUnmarked() {
+    const randomId = Date.now().toString().slice(-5);
+    currentPIV = "Unmarked-" + randomId;
+    isUnmarked = true;
+    currentIndex = 0;
+    tempAnswers = [];
+    document.getElementById("pivNumber").value = "";
+    document.getElementById("entryScreen").classList.add("hidden");
+    document.getElementById("questionScreen").classList.remove("hidden");
+    showQuestion();
   }
 
   function issueResponse(hasIssue) {
@@ -151,29 +173,58 @@
         if (currentIndex < questions.length) {
           showQuestion();
         } else {
-          entries.push([currentPIV, ...tempAnswers, ""]);
-          localStorage.setItem("pivData", JSON.stringify(entries));
-          resetScreens();
+          if (isUnmarked) {
+            document.getElementById("questionScreen").classList.add("hidden");
+            document.getElementById("locationInput").value = "";
+            document.getElementById("locationScreen").classList.remove("hidden");
+          } else {
+            entries.push([currentPIV, ...tempAnswers, ""]);
+            localStorage.setItem("pivData", JSON.stringify(entries));
+            resetScreens();
+          }
         }
       };
       btns.appendChild(btn);
     });
   }
 
+  function submitUnmarked() {
+    const location = document.getElementById("locationInput").value.trim();
+    if (!location) return alert("Location is required.");
+    entries.push([currentPIV, ...tempAnswers, location]);
+    localStorage.setItem("pivData", JSON.stringify(entries));
+    resetScreens();
+  }
+
   function resetScreens() {
     document.getElementById("pivNumber").value = "";
     document.getElementById("questionScreen").classList.add("hidden");
+    document.getElementById("locationScreen").classList.add("hidden");
     document.getElementById("entryScreen").classList.remove("hidden");
   }
 
-  // NEW: Redirect to zone options page
-  function goToZoneOptions() {
-    if (currentPIV && tempAnswers.length === 8) {
-      entries.push([currentPIV, ...tempAnswers, ""]);
+  function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "landscape" });
+    const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
+    const rowHeight = 10;
+    const colWidth = 25;
+    const marginX = 10;
+    const marginY = 20;
+    const perPage = 20;
+
+    for (let i = 0; i < entries.length; i++) {
+      if (i % perPage === 0) {
+        if (i > 0) doc.addPage();
+        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+      }
+      const rowY = marginY + rowHeight * ((i % perPage) + 1);
+      entries[i].forEach((val, col) => {
+        doc.text(val, marginX + col * colWidth, rowY);
+      });
     }
 
-    localStorage.setItem("pivData", JSON.stringify(entries || []));
-    window.location.href = "zone-options.html";
+    doc.save("PIV_Inspection.pdf");
   }
 </script>
 </body>
