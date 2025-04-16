@@ -10,38 +10,9 @@
 (async function() {
   const { jsPDF } = window.jspdf;
 
-  // Load zone map
-  const zoneMap = await fetch('piv_zones.json')
-    .then(res => res.json())
-    .catch(() => ({}));
+  const urlParams = new URLSearchParams(window.location.search);
+  const mode = urlParams.get("mode") || "organize";
 
-  // Load entry data
-  const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
-
-  // Organize entries
-  const zoneBuckets = {};
-  const unmarkedEntries = [];
-
-  entries.forEach(entry => {
-    const pivId = entry[0];
-    if (pivId.startsWith("Unmarked-")) {
-      unmarkedEntries.push(entry);
-    } else {
-      const zone = zoneMap[pivId.replace("PIV-", "")] || "Unknown Zone";
-      if (!zoneBuckets[zone]) zoneBuckets[zone] = [];
-      zoneBuckets[zone].push(entry);
-    }
-  });
-
-  Object.values(zoneBuckets).forEach(entries => {
-    entries.sort((a, b) => {
-      const numA = parseInt(a[0].split("-")[1]);
-      const numB = parseInt(b[0].split("-")[1]);
-      return numA - numB;
-    });
-  });
-
-  // Create PDF
   const doc = new jsPDF({ orientation: "landscape" });
   const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
   const rowHeight = 10;
@@ -50,44 +21,85 @@
   const marginY = 20;
   const perPage = 20;
 
-  let pageIndex = 0;
-  const zones = Object.keys(zoneBuckets).sort();
+  const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
 
-  zones.forEach((zone, zIdx) => {
-    const zoneEntries = zoneBuckets[zone];
-    const pages = Math.ceil(zoneEntries.length / perPage);
-    for (let p = 0; p < pages; p++) {
-      if (pageIndex > 0) doc.addPage();
+  if (mode === "view") {
+    for (let i = 0; i < entries.length; i++) {
+      if (i % perPage === 0) {
+        if (i > 0) doc.addPage();
+        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+      }
+      const rowY = marginY + rowHeight * ((i % perPage) + 1);
+      entries[i].forEach((val, col) => {
+        doc.text(val, marginX + col * colWidth, rowY);
+      });
+    }
+  } else {
+    const zoneMap = await fetch('piv_zones.json')
+      .then(res => res.json())
+      .catch(() => ({}));
+
+    const zoneBuckets = {};
+    const unmarkedEntries = [];
+
+    entries.forEach(entry => {
+      const pivId = entry[0];
+      if (pivId.startsWith("Unmarked-")) {
+        unmarkedEntries.push(entry);
+      } else {
+        const zone = zoneMap[pivId.replace("PIV-", "")] || "Unknown Zone";
+        if (!zoneBuckets[zone]) zoneBuckets[zone] = [];
+        zoneBuckets[zone].push(entry);
+      }
+    });
+
+    Object.values(zoneBuckets).forEach(list => {
+      list.sort((a, b) => {
+        const numA = parseInt(a[0].split("-")[1]);
+        const numB = parseInt(b[0].split("-")[1]);
+        return numA - numB;
+      });
+    });
+
+    let pageIndex = 0;
+    const zones = Object.keys(zoneBuckets).sort();
+
+    zones.forEach(zone => {
+      const zoneEntries = zoneBuckets[zone];
+      const pages = Math.ceil(zoneEntries.length / perPage);
+      for (let p = 0; p < pages; p++) {
+        if (pageIndex > 0) doc.addPage();
+        doc.setFontSize(12);
+        doc.text(`Zone: ${zone}`, marginX, 12);
+        headers.forEach((h, i) => doc.text(h, marginX + i * colWidth, marginY));
+        for (let r = 0; r < perPage; r++) {
+          const entry = zoneEntries[p * perPage + r];
+          if (!entry) break;
+          const y = marginY + rowHeight * (r + 1);
+          entry.forEach((val, i) => {
+            doc.text(val, marginX + i * colWidth, y);
+          });
+        }
+        pageIndex++;
+      }
+    });
+
+    if (unmarkedEntries.length) {
+      doc.addPage();
       doc.setFontSize(12);
-      doc.text(`Zone: ${zone}`, marginX, 12);
+      doc.text("Unmarked PIVs", marginX, 12);
       headers.forEach((h, i) => doc.text(h, marginX + i * colWidth, marginY));
-      for (let r = 0; r < perPage; r++) {
-        const entry = zoneEntries[p * perPage + r];
-        if (!entry) break;
+      for (let r = 0; r < unmarkedEntries.length; r++) {
+        const entry = unmarkedEntries[r];
         const y = marginY + rowHeight * (r + 1);
         entry.forEach((val, i) => {
           doc.text(val, marginX + i * colWidth, y);
         });
       }
-      pageIndex++;
-    }
-  });
-
-  if (unmarkedEntries.length) {
-    doc.addPage();
-    doc.setFontSize(12);
-    doc.text("Unmarked PIVs", marginX, 12);
-    headers.forEach((h, i) => doc.text(h, marginX + i * colWidth, marginY));
-    for (let r = 0; r < unmarkedEntries.length; r++) {
-      const entry = unmarkedEntries[r];
-      const y = marginY + rowHeight * (r + 1);
-      entry.forEach((val, i) => {
-        doc.text(val, marginX + i * colWidth, y);
-      });
     }
   }
 
-  doc.save("Organized_PIV_Inspection.pdf");
+  doc.save(mode === "view" ? "PIV_Entries.pdf" : "Organized_PIV_Inspection.pdf");
 })();
 </script>
 </body>
