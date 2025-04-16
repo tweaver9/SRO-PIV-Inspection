@@ -210,7 +210,12 @@
   }
 
   function generatePDF() {
-    document.getElementById("viewButtons").classList.remove("hidden");
+  // Save the current entries before exporting
+  localStorage.setItem("pivData", JSON.stringify(entries));
+
+  // Show the export options
+  document.getElementById("viewButtons").classList.remove("hidden");
+
   }
 </script>
 </body>
