@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PIV Zone Options</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 30px;
+      font-size: 1.8em;
+    }
+    button {
+      font-size: 22px;
+      padding: 12px 20px;
+      margin: 10px;
+      width: 80%;
+      max-width: 280px;
+      border: none;
+      border-radius: 6px;
+    }
+    .blue { background-color: #007bff; color: white; }
+    .green { background-color: #28a745; color: white; }
+  </style>
+</head>
+<body>
+  <h1>Choose an Export Option</h1>
+  <button class="green" onclick="viewEntries()">View Entries</button>
+  <button class="blue" onclick="organizeAndPrint()">Organize and Print</button>
+
+  <script>
+    const { jsPDF } = window.jspdf;
+
+    function viewEntries() {
+      const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
+      if (!entries.length) return alert("No entries to export.");
+
+      const doc = new jsPDF({ orientation: "landscape" });
+      const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
+      const rowHeight = 10;
+      const colWidth = 25;
+      const marginX = 10;
+      const marginY = 20;
+      const perPage = 20;
+
+      for (let i = 0; i < entries.length; i++) {
+        if (i % perPage === 0) {
+          if (i > 0) doc.addPage();
+          headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+        }
+        const y = marginY + rowHeight * ((i % perPage) + 1);
+        entries[i].forEach((val, col) => {
+          doc.text(val, marginX + col * colWidth, y);
+        });
+      }
+
+      doc.save("PIV_Entries.pdf");
+    }
+
+    async function organizeAndPrint() {
+      const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
+      if (!entries.length) return alert("No entries to organize.");
+
+      let zoneMap = {};
+      try {
+        const response = await fetch("piv_zones.json");
+        zoneMap = await response.json();
+      } catch (e) {
+        alert("Could not load zone database.");
+        return;
+      }
+
+      const getNumber = (piv) => parseInt(piv.replace("PIV-", ""), 10) || 0;
+      const grouped = {};
+
+      entries.forEach(entry => {
+        const piv = entry[0];
+        const zone = zoneMap[piv] || "Unknown Zone";
+        if (!grouped[zone]) grouped[zone] = [];
+        grouped[zone].push(entry);
+      });
+
+      const sortedZones = Object.keys(grouped).sort();
+      const doc = new jsPDF({ orientation: "landscape" });
+      const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
+      const rowHeight = 10;
+      const colWidth = 25;
+      const marginX = 10;
+      const marginY = 20;
+
+      sortedZones.forEach((zone, index) => {
+        if (index > 0) doc.addPage();
+
+        doc.setFontSize(14);
+        doc.text(`Zone: ${zone}`, marginX, marginY - 7);
+        doc.setFontSize(12);
+        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
+
+        const zoneEntries = grouped[zone].sort((a, b) => getNumber(a[0]) - getNumber(b[0]));
+        zoneEntries.forEach((entry, row) => {
+          const y = marginY + rowHeight * (row + 1);
+          entry.forEach((val, col) => {
+            doc.text(val, marginX + col * colWidth, y);
+          });
+        });
+      });
+
+      doc.save("PIV_By_Zone.pdf");
+    }
+  </script>
+</body>
+</html>
