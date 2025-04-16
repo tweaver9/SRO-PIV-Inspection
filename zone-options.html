@@ -7,7 +7,7 @@
 </head>
 <body>
 <script>
-window.onload = async function() {
+(async function () {
   const { jsPDF } = window.jspdf;
 
   const zoneMap = await fetch('piv_zones.json')
@@ -30,8 +30,8 @@ window.onload = async function() {
     }
   });
 
-  Object.values(zoneBuckets).forEach(entryList => {
-    entryList.sort((a, b) => {
+  Object.values(zoneBuckets).forEach(list => {
+    list.sort((a, b) => {
       const numA = parseInt(a[0].split("-")[1]);
       const numB = parseInt(b[0].split("-")[1]);
       return numA - numB;
@@ -49,16 +49,16 @@ window.onload = async function() {
   let pageIndex = 0;
   const zones = Object.keys(zoneBuckets).sort();
 
-  zones.forEach((zone) => {
-    const zoneEntries = zoneBuckets[zone];
-    const pages = Math.ceil(zoneEntries.length / perPage);
+  zones.forEach(zone => {
+    const list = zoneBuckets[zone];
+    const pages = Math.ceil(list.length / perPage);
     for (let p = 0; p < pages; p++) {
       if (pageIndex > 0) doc.addPage();
       doc.setFontSize(12);
       doc.text(`Zone: ${zone}`, marginX, 12);
       headers.forEach((h, i) => doc.text(h, marginX + i * colWidth, marginY));
       for (let r = 0; r < perPage; r++) {
-        const entry = zoneEntries[p * perPage + r];
+        const entry = list[p * perPage + r];
         if (!entry) break;
         const y = marginY + rowHeight * (r + 1);
         entry.forEach((val, i) => {
@@ -84,8 +84,8 @@ window.onload = async function() {
   }
 
   doc.save("Organized_PIV_Inspection.pdf");
-  
-  
+
+  // Final clean-up after PDF download
   localStorage.removeItem("pivData");
 })();
 </script>
