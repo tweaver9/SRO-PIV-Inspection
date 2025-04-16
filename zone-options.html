@@ -7,24 +7,21 @@
 </head>
 <body>
 <script>
-(async function() {
+window.onload = async function() {
   const { jsPDF } = window.jspdf;
 
-  // Load zone map
   const zoneMap = await fetch('piv_zones.json')
     .then(res => res.json())
     .catch(() => ({}));
 
-  // Load entry data
   const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
 
-  // Organize entries
   const zoneBuckets = {};
   const unmarkedEntries = [];
 
   entries.forEach(entry => {
     const pivId = entry[0];
-    if (pivId.startsWith("PIV-000")) {
+    if (pivId === "PIV-000") {
       unmarkedEntries.push(entry);
     } else {
       const zone = zoneMap[pivId.replace("PIV-", "")] || "Unknown Zone";
@@ -33,15 +30,14 @@
     }
   });
 
-  Object.values(zoneBuckets).forEach(entries => {
-    entries.sort((a, b) => {
+  Object.values(zoneBuckets).forEach(entryList => {
+    entryList.sort((a, b) => {
       const numA = parseInt(a[0].split("-")[1]);
       const numB = parseInt(b[0].split("-")[1]);
       return numA - numB;
     });
   });
 
-  // Create PDF
   const doc = new jsPDF({ orientation: "landscape" });
   const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
   const rowHeight = 10;
@@ -53,7 +49,7 @@
   let pageIndex = 0;
   const zones = Object.keys(zoneBuckets).sort();
 
-  zones.forEach((zone, zIdx) => {
+  zones.forEach((zone) => {
     const zoneEntries = zoneBuckets[zone];
     const pages = Math.ceil(zoneEntries.length / perPage);
     for (let p = 0; p < pages; p++) {
@@ -88,7 +84,7 @@
   }
 
   doc.save("Organized_PIV_Inspection.pdf");
-})();
+}
 </script>
 </body>
 </html>
