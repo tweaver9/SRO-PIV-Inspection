@@ -102,7 +102,7 @@
   <button class="green" onclick="submitUnmarked()">Submit</button>
 </div>
 
-<!-- Only shown after DONE is pressed -->
+<!-- Shown only after pressing DONE -->
 <div class="screen hidden" id="viewButtons">
   <button class="green" onclick="window.location.href='zone-options.html?mode=view'">View Entries</button>
   <button class="blue" onclick="window.location.href='zone-options.html'">Organize and Print</button>
@@ -210,12 +210,11 @@
   }
 
   function generatePDF() {
-  // Save the current entries before exporting
-  localStorage.setItem("pivData", JSON.stringify(entries));
+    // Save data just in case
+    localStorage.setItem("pivData", JSON.stringify(entries));
 
-  // Show the export options
-  document.getElementById("viewButtons").classList.remove("hidden");
-
+    // Reveal export buttons
+    document.getElementById("viewButtons").classList.remove("hidden");
   }
 </script>
 </body>
