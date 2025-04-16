@@ -7,7 +7,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
-      <div id="bg-img"></div>
       margin: 0;
       padding: 0;
       background: black;
@@ -15,7 +14,7 @@
       height: 100%;
       width: 100%;
     }
-    <div id="bg-img"></div>
+    
     .screen {
       display: flex;
       flex-direction: column;
@@ -82,24 +81,11 @@
     .hidden {
       display: none;
     }
-#bg-img {
-  position: fixed;
-  top: 5%; left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  height: auto;
-  background-image: url('https://tweaver9.github.io/SRO-PIV-Inspection/IMG_3110.jpeg');
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.75;
-  z-index: 5;
-  pointer-events: none;
+
 }
 </style>
 </head>
 <body>
-<div id="bg-img"></div>
 
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
