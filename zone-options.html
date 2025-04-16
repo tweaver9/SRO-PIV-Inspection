@@ -24,7 +24,7 @@ window.onload = async function() {
     if (pivId === "PIV-000") {
       unmarkedEntries.push(entry);
     } else {
-      const zone = zoneMap[pivId.replace("PIV-", "")] || "Unknown Zone";
+      const zone = zoneMap[pivId] || "Unknown Zone";
       if (!zoneBuckets[zone]) zoneBuckets[zone] = [];
       zoneBuckets[zone].push(entry);
     }
