@@ -80,7 +80,7 @@
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
   <button class="green" onclick="start()">Enter</button>
-  <button class="blue" onclick="generatePDF()">DONE</button>
+  <button class="blue" onclick="goToZoneOptions()">DONE</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -166,28 +166,14 @@
     document.getElementById("entryScreen").classList.remove("hidden");
   }
 
-  function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: "landscape" });
-    const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
-    const rowHeight = 10;
-    const colWidth = 25;
-    const marginX = 10;
-    const marginY = 20;
-    const perPage = 20;
-
-    for (let i = 0; i < entries.length; i++) {
-      if (i % perPage === 0) {
-        if (i > 0) doc.addPage();
-        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
-      }
-      const rowY = marginY + rowHeight * ((i % perPage) + 1);
-      entries[i].forEach((val, col) => {
-        doc.text(val, marginX + col * colWidth, rowY);
-      });
+  // NEW: Redirect to zone options page
+  function goToZoneOptions() {
+    if (currentPIV && tempAnswers.length === 8) {
+      entries.push([currentPIV, ...tempAnswers, ""]);
     }
 
-    doc.save("PIV_Inspection.pdf");
+    localStorage.setItem("pivData", JSON.stringify(entries || []));
+    window.location.href = "zone-options.html";
   }
 </script>
 </body>
