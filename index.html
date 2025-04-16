@@ -26,8 +26,7 @@
       text-align: center;
     }
 
-    input[type="number"],
-    input[type="text"] {
+    input[type="number"] {
       font-size: 28px;
       padding: 10px;
       width: 80%;
@@ -74,10 +73,6 @@
     .hidden {
       display: none;
     }
-
-    #locationInputContainer {
-      margin-top: 20px;
-    }
   </style>
 </head>
 <body>
@@ -85,10 +80,7 @@
 <div class="screen" id="entryScreen">
   <input id="pivNumber" type="number" placeholder="Enter #" />
   <button class="green" onclick="start()">Enter</button>
-  <button class="blue" onclick="generatePDF()">DONE</button>
-  <button class="blue" style="font-size:18px; max-width:200px;" onclick="startUnmarked()">Unmarked</button>
-  <button class="blue" onclick="viewEntries()">View Entries</button>
-  <button class="blue" onclick="organizeAndPrint()">Organize and Print</button>
+  <button class="blue" onclick="goToZoneOptions()">DONE</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -100,10 +92,6 @@
 <div class="screen hidden" id="questionScreen">
   <div class="question-text" id="questionText"></div>
   <div id="answerButtons"></div>
-  <div id="locationInputContainer" class="hidden">
-    <label for="locationInput">Location:</label><br>
-    <input type="text" id="locationInput" placeholder="Enter Location" />
-  </div>
 </div>
 
 <script>
@@ -122,27 +110,12 @@
   let currentPIV = "";
   let currentIndex = 0;
   let tempAnswers = [];
-  let isUnmarked = false;
-  let unmarkedCount = 0;
 
   function start() {
     const number = document.getElementById("pivNumber").value;
     if (!number) return alert("Please enter a number.");
     currentPIV = "PIV-" + number;
-    isUnmarked = false;
     document.getElementById("modal").classList.add("active");
-  }
-
-  function startUnmarked() {
-    unmarkedCount++;
-    currentPIV = "Unmarked-" + unmarkedCount;
-    isUnmarked = true;
-    currentIndex = 0;
-    tempAnswers = [];
-    document.getElementById("entryScreen").classList.add("hidden");
-    document.getElementById("questionScreen").classList.remove("hidden");
-    document.getElementById("locationInput").value = "";
-    showQuestion();
   }
 
   function issueResponse(hasIssue) {
@@ -167,7 +140,6 @@
     document.getElementById("questionText").innerText = `${currentPIV}\n${q.q}`;
     const btns = document.getElementById("answerButtons");
     btns.innerHTML = "";
-    document.getElementById("locationInputContainer").classList.add("hidden");
 
     q.options.forEach(option => {
       const btn = document.createElement("button");
@@ -178,22 +150,6 @@
         currentIndex++;
         if (currentIndex < questions.length) {
           showQuestion();
-        } else if (isUnmarked) {
-          document.getElementById("questionText").innerText = `${currentPIV}\nLocation:`;
-          btns.innerHTML = "";
-          document.getElementById("locationInputContainer").classList.remove("hidden");
-
-          const submitBtn = document.createElement("button");
-          submitBtn.textContent = "Submit";
-          submitBtn.className = "green";
-          submitBtn.onclick = () => {
-            const location = document.getElementById("locationInput").value.trim();
-            if (!location) return alert("Please enter a location.");
-            entries.push([currentPIV, ...tempAnswers, location]);
-            localStorage.setItem("pivData", JSON.stringify(entries));
-            resetScreens();
-          };
-          btns.appendChild(submitBtn);
         } else {
           entries.push([currentPIV, ...tempAnswers, ""]);
           localStorage.setItem("pivData", JSON.stringify(entries));
@@ -206,41 +162,18 @@
 
   function resetScreens() {
     document.getElementById("pivNumber").value = "";
-    document.getElementById("locationInput").value = "";
     document.getElementById("questionScreen").classList.add("hidden");
     document.getElementById("entryScreen").classList.remove("hidden");
   }
 
-  function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: "landscape" });
-    const headers = ["PIV", "Pos", "Sight", "Placard", "Corros", "ID Vis", "Chain", "Leaks", "Wrench", "Comments"];
-    const rowHeight = 10;
-    const colWidth = 25;
-    const marginX = 10;
-    const marginY = 20;
-    const perPage = 20;
-
-    for (let i = 0; i < entries.length; i++) {
-      if (i % perPage === 0) {
-        if (i > 0) doc.addPage();
-        headers.forEach((h, col) => doc.text(h, marginX + col * colWidth, marginY));
-      }
-      const rowY = marginY + rowHeight * ((i % perPage) + 1);
-      entries[i].forEach((val, col) => {
-        doc.text(val, marginX + col * colWidth, rowY);
-      });
+  // NEW: Redirect to zone options page
+  function goToZoneOptions() {
+    if (currentPIV && tempAnswers.length === 8) {
+      entries.push([currentPIV, ...tempAnswers, ""]);
     }
 
-    doc.save("PIV_Inspection.pdf");
-  }
-
-  function viewEntries() {
-    window.location.href = "zone-options.html?mode=view";
-  }
-
-  function organizeAndPrint() {
-    window.location.href = "zone-options.html?mode=organize";
+    localStorage.setItem("pivData", JSON.stringify(entries || []));
+    window.location.href = "zone-options.html";
   }
 </script>
 </body>
