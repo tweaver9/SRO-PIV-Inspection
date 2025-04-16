@@ -189,6 +189,12 @@
 
   function generatePDF() {
     localStorage.setItem("pivData", JSON.stringify(entries));
+
+    // NEW: reset session state
+    currentPIV = "";
+    tempAnswers = [];
+    currentIndex = 0;
+
     document.getElementById("entryScreen").classList.add("hidden");
     document.getElementById("viewButtons").classList.remove("hidden");
   }
