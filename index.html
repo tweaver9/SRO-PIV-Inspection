@@ -7,20 +7,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
-  margin: 0;
-  padding: 0;
-  background-image: url('https://raw.githubusercontent.com/tweaver9/SRO-PIV-Inspection/main/5E52CBCA-B358-4884-93B1-E397CBFD04BF.png');
-  background-color: black;
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-attachment: fixed;
-  background-size: cover;
-  color: white;
-  font-family: Arial, sans-serif;
-  height: 100%;
-  width: 100%;
-  min-height: 100vh; 
-}
+      margin: 0;
+      padding: 0;
+      background-image: url('https://raw.githubusercontent.com/tweaver9/SRO-PIV-Inspection/main/5E52CBCA-B358-4884-93B1-E397CBFD04BF.png');
+      background-color: black;
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-attachment: fixed;
+      background-size: cover;
+      color: white;
+      font-family: Arial, sans-serif;
+      height: 100%;
+      width: 100%;
+      min-height: 100vh;
+    }
 
     .screen {
       display: flex;
@@ -63,19 +63,20 @@
     .green { background-color: #28a745; color: white; }
     .blue { background-color: #007bff; color: white; }
 
-#modal {
-  position: absolute;
-  top: 0; left: 0;
-  height: 100vh;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.7); /* semi-transparent black */
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  text-align: center;
-  z-index: 1000;
-}
+    #modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      z-index: 1000;
+    }
 
     #modal.active {
       display: flex;
@@ -90,7 +91,6 @@
       display: none;
     }
 
-    /* Confirmation Modal */
     #confirmModal {
       position: fixed;
       top: 0;
@@ -120,7 +120,7 @@
       border: 1px solid white;
     }
   </style>
-  </head>
+</head>
 <body>
 
 <div class="screen" id="entryScreen">
@@ -151,6 +151,7 @@
   <h2>Export Options</h2>
   <button class="green" onclick="window.location.href='view-entries.html'">View Entries</button>
   <button class="blue" onclick="showConfirm()">Organize and Print</button>
+  <button class="blue small-button" onclick="openPdfInBrowser()">Android Users</button>
 </div>
 
 <!-- Confirmation Modal -->
@@ -283,6 +284,11 @@
 
   function cancelOrganize() {
     document.getElementById("confirmModal").style.display = "none";
+  }
+
+  function openPdfInBrowser() {
+    localStorage.setItem("pivData", JSON.stringify(entries));
+    window.location.href = "zone-options.html?mode=view";
   }
 </script>
 </body>
