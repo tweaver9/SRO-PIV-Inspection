@@ -9,6 +9,7 @@
 <script>
 (async function () {
   const { jsPDF } = window.jspdf;
+  const isViewMode = window.location.search.includes("mode=view");
 
   const zoneMap = await fetch('piv_zones.json')
     .then(res => res.json())
@@ -83,10 +84,20 @@
     }
   }
 
+  if (isViewMode) {
+  doc.save("PIV_Entries.pdf");
+  const backBtn = document.createElement("button");
+  backBtn.textContent = "Return to Input Page";
+  backBtn.style = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 20px; font-size: 18px;";
+  backBtn.onclick = () => {
+    window.location.href = "index.html";
+  };
+  document.body.appendChild(backBtn);
+} else {
   doc.save("Organized_PIV_Inspection.pdf");
-
-  // Final clean-up after PDF download
   localStorage.removeItem("pivData");
+}
+
 })();
 </script>
 </body>
