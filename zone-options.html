@@ -83,10 +83,12 @@
     }
   }
 
+  if (typeof doc.save === "function") {
   doc.save("Organized_PIV_Inspection.pdf");
-
-  // Clear localStorage for next session
   localStorage.removeItem("pivData");
+} else {
+  alert("This browser doesn't support direct PDF viewing. Please use Chrome or install a PDF viewer.");
+}
 })();
 </script>
 </body>
