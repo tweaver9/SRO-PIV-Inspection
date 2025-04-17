@@ -112,16 +112,16 @@ async function generateSummary() {
   zoneStats.innerHTML = "";
 
   Object.keys(expectedZones).sort().forEach(zone => {
-    const complete = completedZones[zone] || 0;
-    const expected = expectedZones[zone];
-    const percent = Math.round((complete / expected) * 100);
-    const colorClass = percent >= 90 ? "green" : percent >= 70 ? "yellow" : "white";
-    zoneStats.innerHTML += `
-      <div class="zone-block ${colorClass}">
-        <div class="zone-header">${zone}:</div>
-        <div class="zone-progress">${complete}/${expected} (${percent}% complete)</div>
-      </div>`;
-  });
+  const complete = completedZones[zone] || 0;
+  const expected = expectedZones[zone];
+  const percent = Math.round((complete / expected) * 100);
+  const colorClass = percent >= 90 ? "green" : percent >= 70 ? "yellow" : "white";
+  zoneStats.innerHTML += `
+    <div class="zone-block ${colorClass}">
+      <div class="zone-header">${zone}:</div>
+      <div class="zone-progress">${complete}/${expected} (${percent}% complete)</div>
+    </div>`;
+});
 }
 
 generateSummary();
