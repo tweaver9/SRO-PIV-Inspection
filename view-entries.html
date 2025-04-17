@@ -9,42 +9,32 @@
       color: white;
       font-family: Arial, sans-serif;
       padding: 30px;
-      margin: 0;
+      text-align: center;
     }
-
     h1 {
       font-size: 2.2em;
-      margin-bottom: 30px;
-      text-align: center;
+      margin-bottom: 20px;
       text-decoration: underline;
     }
-
     .total-completion {
-      font-size: 2em;
-      margin-bottom: 40px;
-      text-align: center;
+      font-size: 1.8em;
+      margin-bottom: 30px;
     }
-
     .zone-stats {
-      position: absolute;
-      bottom: 60px;
-      left: 30px;
-      font-size: 1.6em;
-      line-height: 2.5em;
+      text-align: left;
+      margin-left: 20px;
+      font-size: 16px;
+      line-height: 2.2em;
     }
-
     .green {
       color: #28a745;
     }
-
     .yellow {
       color: #f8e825;
     }
-
     .white {
       color: white;
     }
-
     .back-btn {
       position: fixed;
       top: 20px;
@@ -72,7 +62,6 @@
 async function generateSummary() {
   const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
 
-  // Fetch the zone map
   const zoneMap = await fetch("piv_zones.json").then(res => res.json());
 
   const expectedZones = {};
