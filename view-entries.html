@@ -21,17 +21,33 @@
     h1 {
       margin: 0 0 20px;
       font-size: 2em;
+      text-decoration: underline;
     }
 
     h2 {
       margin: 0 0 30px;
-      font-size: 1.5em;
+      font-size: 1.6em;
+    }
+
+    #zoneStats {
+      width: 90%;
+      max-width: 600px;
+      text-align: left;
     }
 
     .zone-stat {
-      margin: 10px 0;
-      font-size: 1.2em;
+      margin: 16px 0;
+      font-size: 1.3em;
     }
+
+    .zone-label {
+      text-decoration: underline;
+      font-weight: bold;
+    }
+
+    .green { color: #28a745; }
+    .yellow { color: #ffc107; }
+    .white { color: white; }
 
     .back-arrow {
       position: fixed;
@@ -62,7 +78,7 @@
 
     const zoneMap = {
       "PIV-1": "Zone 3", "PIV-2": "Zone 5", "PIV-4": "Zone 5", "PIV-5": "Zone 3",
-      // Include all your PIV-zone mappings here, shortened for brevity...
+      // shortened for display — include the full map in production
       "PIV-712": "Zone 8"
     };
 
@@ -99,17 +115,26 @@
     const totalCompleted = seen.size + unmarkedCount;
     const percentComplete = Math.round((totalCompleted / totalExpected) * 100);
 
-    document.getElementById("total").textContent =
-      `Total Entries: ${totalCompleted}/${totalExpected} (${percentComplete}% complete)`;
+    const totalEl = document.getElementById("total");
+    let totalClass = "white";
+    if (percentComplete >= 90) totalClass = "green";
+    else if (percentComplete >= 70) totalClass = "yellow";
+
+    totalEl.innerHTML = `<span class="${totalClass}">Total Entries: ${totalCompleted}/${totalExpected} (${percentComplete}% complete)</span>`;
 
     const statsDiv = document.getElementById("zoneStats");
     Object.keys(expectedCounts).forEach(zone => {
       const done = zoneCounts[zone] || 0;
       const expected = expectedCounts[zone];
       const percent = Math.round((done / expected) * 100);
+      let colorClass = "white";
+      if (percent >= 90) colorClass = "green";
+      else if (percent >= 70) colorClass = "yellow";
+
       const div = document.createElement("div");
-      div.className = "zone-stat";
-      div.textContent = `${zone}: ${done}/${expected} (${percent}% complete)`;
+      div.className = `zone-stat ${colorClass}`;
+      const strong = percent === 100 ? "font-weight:bold;" : "";
+      div.innerHTML = `<span class="zone-label" style="${strong}">${zone}:</span> ${done}/${expected} (${percent}% complete)`;
       statsDiv.appendChild(div);
     });
   </script>
