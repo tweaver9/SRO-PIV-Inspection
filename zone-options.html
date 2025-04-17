@@ -87,8 +87,21 @@
  if (isViewMode) {
   const pdfBlob = doc.output("blob");
   const pdfUrl = URL.createObjectURL(pdfBlob);
-  window.open(pdfUrl, "_blank");
 
+  // Open PDF in a new tab
+  const pdfWindow = window.open("", "_blank");
+  if (pdfWindow) {
+    pdfWindow.document.write(`
+      <html>
+        <head><title>PIV Entries</title></head>
+        <body style="margin:0">
+          <embed width="100%" height="100%" src="${pdfUrl}" type="application/pdf">
+        </body>
+      </html>
+    `);
+  }
+
+  // Show return button on the current page
   const backBtn = document.createElement("button");
   backBtn.textContent = "Return to Input Page";
   backBtn.style = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 20px; font-size: 18px; z-index: 9999;";
