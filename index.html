@@ -83,7 +83,35 @@
     .hidden {
       display: none;
     }
-
+    
+    #confirmModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 999;
+    }
+    
+     #confirmModal p {
+      font-size: 1.4em;
+      margin-bottom: 20px;
+      padding: 0 20px;
+    }
+    
+    .modal-box {
+      background: #111;
+      padding: 30px;
+      border-radius: 8px;
+      border: 1px solid white;
+    }
 }
 </style>
 </head>
@@ -94,6 +122,7 @@
   <button class="green" onclick="start()">Enter</button>
   <button class="blue" onclick="generatePDF()">DONE</button>
   <button class="blue small-button" onclick="startUnmarked()">Unmarked</button>
+  <button class="blue" onclick="showConfirm()">Organize and Print</button>
 </div>
 
 <div id="modal" class="hidden">
@@ -107,16 +136,19 @@
   <div id="answerButtons"></div>
 </div>
 
-<div class="screen hidden" id="locationScreen">
-  <div class="question-text">Enter Location:</div>
-  <input type="text" id="locationInput" placeholder="Required" />
-  <button class="green" onclick="submitLocation()">Next</button>
-</div>
-
 <div class="screen hidden" id="viewButtons">
   <h2>Export Options</h2>
-  <button class="green" onclick="window.location.href='view-entries.html'">View Entries</button>
-  <button class="blue" onclick="window.location.href='zone-options.html'">Organize and Print</button>
+  <button class="green" onclick="window.location.href='ViewEntriesV1.2.html'">View Entries</button>
+  <button class="blue" onclick="showConfirm()">Organize and Print</button>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="hidden">
+  <div class="modal-box">
+    <p>Are you sure?<br>This will complete this session, generate an organized PDF, and delete all entries.</p>
+    <button class="green" onclick="confirmOrganize()">Yes</button>
+    <button class="blue" onclick="cancelOrganize()">No</button>
+  </div>
 </div>
 
 <script>
@@ -228,6 +260,18 @@
 
     document.getElementById("entryScreen").classList.add("hidden");
     document.getElementById("viewButtons").classList.remove("hidden");
+  }
+  
+  function showConfirm() {
+    document.getElementById("confirmModal").style.display = "flex";
+  }
+
+  function confirmOrganize() {
+    window.location.href = "zone-options.html";
+  }
+
+  function cancelOrganize() {
+    document.getElementById("confirmModal").style.display = "none";
   }
 </script>
 </body>
