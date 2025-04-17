@@ -9,7 +9,7 @@
     body {
       margin: 0;
       padding: 0;
-      background-image: url('https://raw.githubusercontent.com/tweaver9/SRO-PIV-Inspection/main/5E52CBCA-B358-4884-93B1-E397CBFD04BF.png');
+      background-image: url('5E52CBCA-B358-4884-93B1-E397CBFD04BF.png');
       background-color: black;
       background-repeat: no-repeat;
       background-position: center center;
@@ -65,8 +65,7 @@
 
     #modal {
       position: absolute;
-      top: 0;
-      left: 0;
+      top: 0; left: 0;
       height: 100vh;
       width: 100%;
       background-color: rgba(0, 0, 0, 0.7);
@@ -119,6 +118,12 @@
       border-radius: 8px;
       border: 1px solid white;
     }
+
+    #uaInfo {
+      font-size: 12px;
+      padding: 10px;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -151,10 +156,11 @@
   <h2>Export Options</h2>
   <button class="green" onclick="window.location.href='view-entries.html'">View Entries</button>
   <button class="blue" onclick="showConfirm()">Organize and Print</button>
-  <button class="blue small-button" onclick="openPdfInBrowser()">Android Users</button>
+  <button id="androidBtn" class="blue" style="display:none;" onclick="openPDFInBrowser()">Android Users</button>
 </div>
 
-<!-- Confirmation Modal -->
+<div id="uaInfo"></div>
+
 <div id="confirmModal" class="hidden">
   <div class="modal-box">
     <p>Are you sure?<br>This will complete this session, generate an organized PDF, and delete all entries.</p>
@@ -286,10 +292,16 @@
     document.getElementById("confirmModal").style.display = "none";
   }
 
-  function openPdfInBrowser() {
-    localStorage.setItem("pivData", JSON.stringify(entries));
+  function openPDFInBrowser() {
     window.location.href = "zone-options.html?mode=view";
   }
+
+  // Detect Android and show button
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  if (/android/i.test(ua)) {
+    document.getElementById("androidBtn").style.display = "inline-block";
+  }
+  document.getElementById("uaInfo").textContent = ua;
 </script>
 </body>
 </html>
