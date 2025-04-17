@@ -61,6 +61,16 @@
       text-decoration: none;
       display: inline-block;
     }
+    .recent-entries-box {
+      margin-top: 100px;
+      padding: 10px;
+      border: 1px solid white;
+      width: 300px;
+      font-size: 1.3em;
+      text-align: left;
+      margin-left: auto;
+      margin-right: auto;
+    }
   </style>
 </head>
 <body>
@@ -68,6 +78,7 @@
 <h1>Completion Summary</h1>
 <div class="total-completion" id="totalCompletion"></div>
 <div class="zone-stats" id="zoneStats"></div>
+<div class="recent-entries-box" id="recentEntries"></div>
 
 <script>
 async function generateSummary() {
@@ -112,16 +123,35 @@ async function generateSummary() {
   zoneStats.innerHTML = "";
 
   Object.keys(expectedZones).sort().forEach(zone => {
-  const complete = completedZones[zone] || 0;
-  const expected = expectedZones[zone];
-  const percent = Math.round((complete / expected) * 100);
-  const colorClass = percent >= 90 ? "green" : percent >= 70 ? "yellow" : "white";
-  zoneStats.innerHTML += `
-    <div class="zone-block ${colorClass}">
-      <div class="zone-header">${zone}:</div>
-      <div class="zone-progress">${complete}/${expected} (${percent}% complete)</div>
-    </div>`;
-});
+    const complete = completedZones[zone] || 0;
+    const expected = expectedZones[zone];
+    const percent = Math.round((complete / expected) * 100);
+    const colorClass = percent >= 90 ? "green" : percent >= 70 ? "yellow" : "white";
+    zoneStats.innerHTML += `
+      <div class="zone-block ${colorClass}">
+        <div class="zone-header">${zone}:</div>
+        <div class="zone-progress">${complete}/${expected} (${percent}% complete)</div>
+      </div>`;
+  });
+
+  showRecentEntries(entries);
+}
+
+function showRecentEntries(entries) {
+  const seen = new Set();
+  const recent = [];
+
+  for (let i = entries.length - 1; i >= 0 && recent.length < 5; i--) {
+    const piv = entries[i][0];
+    if (piv !== "PIV-000" && !seen.has(piv)) {
+      seen.add(piv);
+      recent.push(piv.replace("PIV-", ""));
+    }
+  }
+
+  if (recent.length) {
+    document.getElementById("recentEntries").innerHTML = `<strong>Last Entries:</strong><br>${recent.join("<br>")}`;
+  }
 }
 
 generateSummary();
