@@ -85,13 +85,10 @@
   }
 
  if (isViewMode) {
-  const pdfBlob = doc.output("blob");
-  const pdfUrl = URL.createObjectURL(pdfBlob);
+  // Auto-download PDF as "PIV_Entries.pdf"
+  doc.save("PIV_Entries.pdf");
 
-  // Open the PDF in a new tab as a direct file
-  window.open(pdfUrl, "_blank");
-
-  // Show return button on the current page
+  // Add return button
   const backBtn = document.createElement("button");
   backBtn.textContent = "Return to Input Page";
   backBtn.style = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 20px; font-size: 18px; z-index: 9999;";
