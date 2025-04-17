@@ -88,6 +88,9 @@
   const pdfBlob = doc.output("blob");
   const blobUrl = URL.createObjectURL(pdfBlob);
   window.open(blobUrl, "_blank");
+
+  // Clean up blob after short delay
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
 } else {
   doc.save("Organized_PIV_Inspection.pdf");
   localStorage.removeItem("pivData");
