@@ -71,7 +71,7 @@
         });
 
         const totalEntered = uniquePIVs.size + unmarkedCount;
-        const totalExpected = 49;
+        const totalExpected = Object.keys(zoneMap).length;
         const totalPercent = Math.round((totalEntered / totalExpected) * 100);
         document.getElementById("totalStats").textContent =
           `Total Entries: ${totalEntered}/${totalExpected} (${totalPercent}% complete)`;
