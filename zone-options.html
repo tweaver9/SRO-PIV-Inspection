@@ -88,18 +88,8 @@
   const pdfBlob = doc.output("blob");
   const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  // Open PDF in a new tab
-  const pdfWindow = window.open("", "_blank");
-  if (pdfWindow) {
-    pdfWindow.document.write(`
-      <html>
-        <head><title>PIV Entries</title></head>
-        <body style="margin:0">
-          <embed width="100%" height="100%" src="${pdfUrl}" type="application/pdf">
-        </body>
-      </html>
-    `);
-  }
+  // Open the PDF in a new tab as a direct file
+  window.open(pdfUrl, "_blank");
 
   // Show return button on the current page
   const backBtn = document.createElement("button");
