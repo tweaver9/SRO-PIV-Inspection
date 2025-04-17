@@ -62,14 +62,16 @@
       display: inline-block;
     }
     .recent-entries-box {
-      margin-top: 100px;
+      margin-top: 70px;
       padding: 10px;
       border: 1px solid white;
-      width: 300px;
+      max-width: 90%;
       font-size: 1.3em;
       text-align: left;
       margin-left: auto;
       margin-right: auto;
+      line-height: 1.8em;
+      min-height: 7em;
     }
   </style>
 </head>
@@ -141,7 +143,7 @@ function showRecentEntries(entries) {
   const seen = new Set();
   const recent = [];
 
-  for (let i = entries.length - 1; i >= 0 && recent.length < 5; i--) {
+  for (let i = entries.length - 1; i >= 0 && recent.length < 6; i--) {
     const piv = entries[i][0];
     if (piv !== "PIV-000" && !seen.has(piv)) {
       seen.add(piv);
