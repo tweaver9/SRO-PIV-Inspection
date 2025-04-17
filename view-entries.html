@@ -2,89 +2,93 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>PIV Entry Stats</title>
+  <title>View Entries Summary</title>
   <style>
     body {
-      background-color: black;
+      background: black;
       color: white;
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1, h2 {
+      padding: 40px 20px;
       text-align: center;
     }
 
+    h1, h2 {
+      margin-bottom: 20px;
+    }
+
     .zone-stat {
-      margin-bottom: 10px;
+      margin: 12px 0;
       font-size: 1.2em;
     }
 
-    #backBtn {
+    .back-arrow {
       position: fixed;
       top: 20px;
       left: 20px;
       background-color: #28a745;
       color: white;
-      border: none;
+      font-size: 24px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 20px;
-      text-align: center;
-      line-height: 40px;
-      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
-  <button id="backBtn" onclick="window.location.href='index.html'">&larr;</button>
-  <h1>PIV Completion Overview</h1>
-  <h2 id="totalStats"></h2>
+  <a href="index.html" class="back-arrow">&#8592;</a>
+  <h1>Completion Summary</h1>
+  <h2 id="total"></h2>
   <div id="zoneStats"></div>
 
   <script>
-    const zoneMapUrl = 'piv_zones.json';
-    const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
-
-    const zones = {};
-    const totalZones = new Set();
-    let uniquePIVs = new Set();
-    let unmarkedCount = 0;
-
-    fetch(zoneMapUrl)
+    fetch('piv_zones.json')
       .then(res => res.json())
       .then(zoneMap => {
-        Object.keys(zoneMap).forEach(id => totalZones.add(zoneMap[id]));
+        const entries = JSON.parse(localStorage.getItem("pivData") || "[]");
+
+        const seenPIVs = new Set();
+        const unmarkedCount = entries.filter(e => e[0] === "PIV-000").length;
+
+        const zoneCounts = {};
+        let uniqueCount = 0;
 
         entries.forEach(entry => {
           const id = entry[0];
-          if (id === "PIV-000") {
-            unmarkedCount++;
-          } else if (!uniquePIVs.has(id)) {
-            uniquePIVs.add(id);
+          if (id === "PIV-000") return; // skip unmarked for zone stats
+
+          if (!seenPIVs.has(id)) {
+            seenPIVs.add(id);
             const zone = zoneMap[id];
-            if (!zones[zone]) zones[zone] = [];
-            zones[zone].push(id);
+            if (zone) {
+              zoneCounts[zone] = (zoneCounts[zone] || 0) + 1;
+              uniqueCount++;
+            }
           }
         });
 
-        const totalEntered = uniquePIVs.size + unmarkedCount;
         const totalExpected = Object.keys(zoneMap).length;
-        const totalPercent = Math.round((totalEntered / totalExpected) * 100);
-        document.getElementById("totalStats").textContent =
-          `Total Entries: ${totalEntered}/${totalExpected} (${totalPercent}% complete)`;
+        const totalCompleted = uniqueCount + unmarkedCount;
+        const percentComplete = Math.round((totalCompleted / totalExpected) * 100);
 
-        const zoneContainer = document.getElementById("zoneStats");
-        totalZones.forEach(zone => {
-          const entered = zones[zone]?.length || 0;
-          const expected = Object.values(zoneMap).filter(z => z === zone).length;
-          const percent = Math.round((entered / expected) * 100);
+        document.getElementById("total").innerText =
+          `Total Entries: ${totalCompleted} / ${totalExpected} (${percentComplete}% complete)`;
+
+        const zoneStatsDiv = document.getElementById("zoneStats");
+        const allZones = Object.values(zoneMap);
+        const zoneSet = [...new Set(allZones)].sort();
+
+        zoneSet.forEach(zone => {
+          const expected = allZones.filter(z => z === zone).length;
+          const actual = zoneCounts[zone] || 0;
+          const percent = Math.round((actual / expected) * 100);
           const div = document.createElement("div");
           div.className = "zone-stat";
-          div.textContent = `${zone}: ${entered}/${expected} (${percent}% complete)`;
-          zoneContainer.appendChild(div);
+          div.innerText = `${zone}: ${actual} / ${expected} (${percent}% complete)`;
+          zoneStatsDiv.appendChild(div);
         });
       });
   </script>
