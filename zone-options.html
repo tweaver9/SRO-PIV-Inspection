@@ -85,17 +85,9 @@
   }
 
  if (isViewMode) {
-  // Auto-download PDF as "PIV_Entries.pdf"
-  doc.save("PIV_Entries.pdf");
-
-  // Add return button
-  const backBtn = document.createElement("button");
-  backBtn.textContent = "Return to Input Page";
-  backBtn.style = "position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); padding: 12px 20px; font-size: 18px; z-index: 9999;";
-  backBtn.onclick = () => {
-    window.location.href = "index.html";
-  };
-  document.body.appendChild(backBtn);
+  const pdfBlob = doc.output("blob");
+  const blobUrl = URL.createObjectURL(pdfBlob);
+  window.open(blobUrl, "_blank");
 } else {
   doc.save("Organized_PIV_Inspection.pdf");
   localStorage.removeItem("pivData");
@@ -103,5 +95,11 @@
 
 })();
 </script>
+<script>
+  window.addEventListener("focus", () => {
+    window.location.href = "index.html";
+  });
+</script>
+
 </body>
 </html>
