@@ -4,6 +4,9 @@
 <head>
 <meta charset="utf-8"/>
 <title>PIV Inspection</title>
+<link href="manifest.json" rel="manifest"/>
+<link href="icon-512.png" rel="apple-touch-icon"/>
+<meta content="#000000" name="theme-color"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -34,7 +37,8 @@
     }
 
     input[type="number"],
-    input[type="text"] {
+    input[type="text"],
+    input[type="tel"] {
       font-size: 28px;
       padding: 10px;
       width: 80%;
@@ -145,6 +149,7 @@
     max-width: 200px;
   }
 </style>
+<link href="manifest.json" rel="manifest"/>
 <div class="screen" id="entryScreen">
 <input id="pivNumber" placeholder="Enter #" type="tel" inputmode="numeric" pattern="[0-9]*"/>
 <button class="green" onclick="start()">Enter</button>
@@ -300,16 +305,19 @@
   function cancelOrganize() {
     document.getElementById("confirmModal").style.display = "none";
   }
-
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => console.log('Service Worker registered:', reg.scope))
+    .catch(err => console.error('Service Worker error:', err));
+}
 
 function showReadme() {
   document.getElementById('readmeOverlay').style.display = 'block';
 }
 function hideReadme() {
   document.getElementById('readmeOverlay').style.display = 'none';
-}
+}    
 </script>
-
 <div id="readmeOverlay" style="
   display: none;
   position: fixed;
